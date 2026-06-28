@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>🏛️ Museum Guide Robot</title>
+
+    <!-- MQTT Library -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js">
+    </script>
+
+    <style>
+        /* ==========================================
+           RESET & BASE
+           ========================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a1a;
+            color: #eee;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        #app {
+            width: 100%;
+            min-height: 100vh;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #12122a, #1a1a3e);
+            padding: 15px 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .section {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            animation: fadeIn 0.6s ease;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+
+        .section.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .top-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 15px;
+            flex-shrink: 0;
+            gap: 8px;
+        }
+
+        .top-bar .title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #e94560;
+            letter-spacing: 0.5px;
+        }
+
+        .top-bar .title span {
+            color: #aaa;
+            font-weight: 300;
+        }
+
+        .top-bar .status-badge {
+            background: rgba(233, 69, 96, 0.15);
+            color: #e94560;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .top-bar .status-badge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e94560;
+            display: inline-block;
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+        }
+
+        .top-bar .admin-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #aaa;
+            padding: 4px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: 0.3s;
+        }
+
+        .top-bar .admin-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        #welcome-section .welcome-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            gap: 12px;
+            padding: 10px 0;
+        }
+
+        #welcome-section .robot-face {
+            font-size: 4rem;
+            line-height: 1;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        #welcome-section .robot-face .eyes {
+            display: inline-block;
+            animation: blink 4s infinite;
+        }
+
+        @keyframes blink {
+            0%,
+            45%,
+            55%,
+            100% {
+                transform: scaleY(1);
+            }
+            50% {
+                transform: scaleY(0.1);
+            }
+        }
+
+        #welcome-section h2 {
+            font-size: 1.8rem;
+            color: #fff;
+            font-weight: 300;
+        }
+
+        #welcome-section h2 strong {
+            color: #e94560;
+            font-weight: 700;
+        }
+
+        #welcome-section .sub {
+            color: #888;
+            font-size: 0.9rem;
+            max-width: 90%;
+        }
+
+        .sensor-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .sensor-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 14px 20px;
+            min-width: 100px;
+            flex: 1 0 auto;
+            max-width: 160px;
+            text-align: center;
+        }
+
+        .sensor-card .value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .sensor-card .label {
+            font-size: 0.7rem;
+            color: #888;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sensor-card .value.temp {
+            color: #ff6b6b;
+        }
+        .sensor-card .value.humid {
+            color: #4ecdc4;
+        }
+
+        .sensor-alert {
+            margin-top: 12px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            display: none;
+            font-weight: 600;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .sensor-alert.danger {
+            display: block;
+            background: rgba(255, 50, 50, 0.15);
+            border: 1px solid rgba(255, 50, 50, 0.3);
+            color: #ff6b6b;
+        }
+
+        .sensor-alert.warning {
+            display: block;
+            background: rgba(255, 200, 50, 0.12);
+            border: 1px solid rgba(255, 200, 50, 0.25);
+            color: #ffd93d;
+        }
+
+        #driving-section .driving-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        #driving-section .driving-icon {
+            font-size: 3.5rem;
+            animation: pulse 1.2s infinite;
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.08);
+                opacity: 0.7;
+            }
+        }
+
+        #driving-section h2 {
+            font-size: 1.6rem;
+            color: #ffd93d;
+        }
+
+        #driving-section .coord-display {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 12px 24px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: #4ecdc4;
+            word-break: break-all;
+        }
+
+        #driving-section .progress-wrap {
+            width: 85%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 30px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        #driving-section .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #e94560, #ffd93d);
+            border-radius: 30px;
+            transition: width 0.4s ease;
+        }
+
+        #driving-section .eta-text {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        #presenting-section .presenting-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            padding-right: 0;
+        }
+
+        #presenting-section .greeting-box {
+            background: rgba(233, 69, 96, 0.10);
+            border: 1px solid rgba(233, 69, 96, 0.2);
+            border-radius: 14px;
+            padding: 14px 18px;
+            text-align: center;
+            font-size: 1.1rem;
+            color: #e94560;
+            animation: pulse 2s infinite;
+        }
+
+        #presenting-section .artifact-display {
+            display: none;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            padding: 16px 18px;
+            gap: 16px;
+            flex: 1;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #presenting-section .artifact-display.active {
+            display: flex;
+        }
+
+        #presenting-section .artifact-display .image-area {
+            flex: 0 0 140px;
+            width: 140px;
+            height: 140px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+        }
+
+        #presenting-section .artifact-display .image-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #presenting-section .artifact-display .info-area {
+            flex: 1;
+            width: 100%;
+        }
+
+        #presenting-section .artifact-display .info-area h3 {
+            font-size: 1.4rem;
+            color: #e94560;
+            margin-bottom: 4px;
+        }
+
+        #presenting-section .artifact-display .info-area .meta {
+            color: #888;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+
+        #presenting-section .artifact-display .info-area .desc {
+            color: #ccc;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+
+        #presenting-section .artifact-display .info-area .lang-indicator {
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.08);
+            padding: 4px 14px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .lang-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .lang-buttons button {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            padding: 5px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: 0.3s;
+        }
+
+        .lang-buttons button:hover {
+            background: rgba(233, 69, 96, 0.2);
+            border-color: #e94560;
+            color: #fff;
+        }
+
+        .lang-buttons button.active {
+            background: rgba(233, 69, 96, 0.25);
+            border-color: #e94560;
+            color: #fff;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            justify-content: center;
+        }
+
+        .action-row button {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            padding: 8px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.3s;
+            font-weight: 500;
+        }
+
+        .action-row button:hover {
+            background: rgba(233, 69, 96, 0.15);
+            border-color: #e94560;
+            color: #fff;
+        }
+
+        .action-row button.primary {
+            background: #e94560;
+            border-color: #e94560;
+            color: #fff;
+        }
+
+        .action-row button.primary:hover {
+            background: #c73652;
+            border-color: #c73652;
+        }
+
+        .action-row button.secondary {
+            background: rgba(78, 205, 196, 0.12);
+            border-color: #4ecdc4;
+            color: #4ecdc4;
+        }
+
+        .action-row button.secondary:hover {
+            background: rgba(78, 205, 196, 0.2);
+        }
+
+        #admin-section .admin-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            padding-right: 0;
+        }
+
+        #admin-section .admin-login {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            gap: 15px;
+            padding: 20px 0;
+        }
+
+        #admin-section .admin-login.hidden {
+            display: none;
+        }
+
+        #admin-section .admin-login input {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 1rem;
+            width: 90%;
+            max-width: 280px;
+            text-align: center;
+        }
+
+        #admin-section .admin-login input:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        #admin-section .admin-panel {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #admin-section .admin-panel.active {
+            display: flex;
+        }
+
+        #admin-section .admin-panel h2 {
+            color: #e94560;
+            font-size: 1.3rem;
+        }
+
+        #admin-section .admin-panel .setting-group {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 14px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #admin-section .admin-panel .setting-group label {
+            color: #aaa;
+            font-size: 0.8rem;
+            min-width: 80px;
+        }
+
+        #admin-section .admin-panel .setting-group input[type="range"] {
+            flex: 1;
+            min-width: 100px;
+            accent-color: #e94560;
+            background: rgba(255, 255, 255, 0.06);
+            height: 4px;
+            border-radius: 4px;
+        }
+
+        #admin-section .admin-panel .setting-group .val {
+            color: #4ecdc4;
+            font-weight: 600;
+            min-width: 35px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        #admin-section .admin-panel .setting-group button {
+            background: rgba(233, 69, 96, 0.15);
+            border: 1px solid rgba(233, 69, 96, 0.2);
+            color: #e94560;
+            padding: 5px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.8rem;
+        }
+
+        #admin-section .admin-panel .setting-group button:hover {
+            background: rgba(233, 69, 96, 0.25);
+        }
+
+        .control-group.manual-control {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .control-group.manual-control .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            max-width: 300px;
+            margin: 5px auto 0;
+        }
+
+        .control-group.manual-control .btn-grid button {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 12px 0;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: 0.2s;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .control-group.manual-control .btn-grid button:active {
+            transform: scale(0.92);
+            background: rgba(233, 69, 96, 0.3);
+        }
+
+        .control-group.manual-control .btn-grid .stop-btn {
+            background: rgba(233, 69, 96, 0.2);
+            border-color: #e94560;
+            color: #e94560;
+        }
+
+        .control-group.manual-control .btn-grid .stop-btn:active {
+            background: rgba(233, 69, 96, 0.4);
+        }
+
+        .mqtt-status {
+            margin-top: 10px;
+            font-size: 0.7rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: flex-end;
+            flex-shrink: 0;
+        }
+
+        .mqtt-status .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .mqtt-status .dot.online {
+            background: #4ecdc4;
+        }
+        .mqtt-status .dot.offline {
+            background: #e94560;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        @media (max-width: 600px) {
+            #app {
+                padding: 12px 15px;
+                border-radius: 0;
+                min-height: 100vh;
+            }
+            .top-bar .title {
+                font-size: 1rem;
+            }
+            .top-bar .status-badge {
+                font-size: 0.6rem;
+                padding: 3px 10px;
+            }
+            .top-bar .admin-btn {
+                font-size: 0.65rem;
+                padding: 3px 10px;
+            }
+            #welcome-section h2 {
+                font-size: 1.4rem;
+            }
+            #welcome-section .robot-face {
+                font-size: 3rem;
+            }
+            .sensor-card {
+                padding: 10px 14px;
+                min-width: 80px;
+                max-width: 120px;
+            }
+            .sensor-card .value {
+                font-size: 1.2rem;
+            }
+            .sensor-card .label {
+                font-size: 0.6rem;
+            }
+            #driving-section h2 {
+                font-size: 1.3rem;
+            }
+            #driving-section .coord-display {
+                font-size: 0.9rem;
+                padding: 10px 16px;
+            }
+            #presenting-section .artifact-display .image-area {
+                flex: 0 0 100px;
+                width: 100px;
+                height: 100px;
+                font-size: 3rem;
+            }
+            #presenting-section .artifact-display .info-area h3 {
+                font-size: 1.2rem;
+            }
+            #presenting-section .artifact-display .info-area .desc {
+                font-size: 0.85rem;
+            }
+            .lang-buttons button {
+                font-size: 0.7rem;
+                padding: 4px 10px;
+            }
+            .action-row button {
+                font-size: 0.8rem;
+                padding: 6px 16px;
+            }
+            #admin-section .admin-panel .setting-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            #admin-section .admin-panel .setting-group label {
+                min-width: auto;
+            }
+            #admin-section .admin-panel .setting-group input[type="range"] {
+                min-width: auto;
+            }
+            .mqtt-status {
+                font-size: 0.6rem;
+            }
+            .control-group.manual-control .btn-grid {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 400px) {
+            #app {
+                padding: 8px 10px;
+            }
+            .top-bar .title {
+                font-size: 0.9rem;
+            }
+            #welcome-section h2 {
+                font-size: 1.2rem;
+            }
+            .sensor-card {
+                padding: 8px 10px;
+                min-width: 60px;
+            }
+            .sensor-card .value {
+                font-size: 1rem;
+            }
+            #presenting-section .artifact-display .image-area {
+                flex: 0 0 80px;
+                width: 80px;
+                height: 80px;
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app">
+
+        <!-- TOP BAR -->
+        <div class="top-bar">
+            <div class="title">🏛️ Museum <span>Guide</span></div>
+            <div class="status-badge">
+                <span class="dot"></span>
+                <span id="stateLabel">Idle</span>
+            </div>
+            <button class="admin-btn" id="adminToggleBtn">⚙️ Admin</button>
+        </div>
+
+        <!-- ========== WELCOME / IDLE ========== -->
+        <div id="welcome-section" class="section active">
+            <div class="welcome-content">
+                <div class="robot-face">
+                    <span class="eyes">👀</span>
+                    <span>🤖</span>
+                </div>
+                <h2>Welcome to the <strong>Museum</strong></h2>
+                <p class="sub">I'm your autonomous guide. I'll detect crowds, move to them, and present artifacts.</p>
+
+                <div class="sensor-row">
+                    <div class="sensor-card">
+                        <div class="value temp" id="tempDisplay">--</div>
+                        <div class="label">🌡️ Temperature</div>
+                    </div>
+                    <div class="sensor-card">
+                        <div class="value humid" id="humidDisplay">--</div>
+                        <div class="label">💧 Humidity</div>
+                    </div>
+                    <div class="sensor-card">
+                        <div class="value" id="crowdCountDisplay" style="color:#ffd93d;">0</div>
+                        <div class="label">👥 People Detected</div>
+                    </div>
+                </div>
+
+                <div id="sensorAlert" class="sensor-alert"></div>
+
+                <!-- Demo Mode Toggle -->
+                <div style="margin-top: 15px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+                    <button id="demoModeBtn" style="background: rgba(78, 205, 196, 0.15); border: 1px solid #4ecdc4; color: #4ecdc4; padding: 8px 24px; border-radius: 30px; cursor: pointer; font-size: 0.9rem;">▶️ Start Demo</button>
+                    <span id="demoStatus" style="color: #888; font-size: 0.85rem; align-self: center;">Demo: Off</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== DRIVING ========== -->
+        <div id="driving-section" class="section">
+            <div class="driving-content">
+                <div class="driving-icon">🚗</div>
+                <h2>Moving to Crowd</h2>
+                <div class="coord-display" id="coordDisplay">Target: (--, --)</div>
+                <div class="progress-wrap">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="eta-text" id="etaDisplay">⏱️ ETA: -- s</div>
+            </div>
+        </div>
+
+        <!-- ========== PRESENTING ========== -->
+        <div id="presenting-section" class="section">
+            <div class="presenting-content">
+
+                <div class="greeting-box" id="greetingBox">
+                    👋 Hello! Welcome to the museum!
+                </div>
+
+                <div class="artifact-display" id="artifactDisplay">
+                    <div class="image-area" id="artifactImage">
+                        🏺
+                    </div>
+                    <div class="info-area">
+                        <h3 id="artifactName">Artifact Name</h3>
+                        <div class="meta" id="artifactMeta">Origin • Year • Material</div>
+                        <div class="desc" id="artifactDesc">Description goes here.</div>
+                        <div class="lang-indicator" id="langIndicator">🔊 Speaking: English</div>
+                        <div class="lang-buttons">
+                            <button data-lang="ms">🇲🇾 Bahasa Melayu</button>
+                            <button data-lang="en" class="active">🇬🇧 English</button>
+                            <button data-lang="fr">🇫🇷 Français</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-row">
+                    <button class="secondary" id="replayBtn">🔁 Replay Info</button>
+                    <button class="primary" id="doneBtn">✅ Done / Finish</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ========== ADMIN ========== -->
+        <div id="admin-section" class="section">
+            <div class="admin-content">
+
+                <div class="admin-login" id="adminLogin">
+                    <h2 style="color:#e94560;">🔐 Admin Login</h2>
+                    <input type="password" id="adminPassword" placeholder="Enter password..." />
+                    <button style="background:#e94560;color:#fff;border:none;padding:10px 30px;border-radius:30px;cursor:pointer;font-size:1rem;" id="adminLoginBtn">Login</button>
+                    <span style="color:#888;font-size:0.8rem;" id="adminLoginError"></span>
+                </div>
+
+                <div class="admin-panel" id="adminPanel">
+                    <h2>⚙️ Robot Configuration</h2>
+
+                    <div class="setting-group">
+                        <label>Detection Range</label>
+                        <input type="range" id="minRangeSlider" min="0.1" max="5.0" step="0.1" value="0.5" />
+                        <span class="val" id="minRangeVal">0.5</span>
+                        <span style="color:#666;">to</span>
+                        <input type="range" id="maxRangeSlider" min="0.5" max="10.0" step="0.5" value="5.0" />
+                        <span class="val" id="maxRangeVal">5.0</span>
+                        <button id="applyRangeBtn">Apply</button>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Movement Speed</label>
+                        <input type="range" id="speedSlider" min="0.1" max="1.0" step="0.05" value="0.5" />
+                        <span class="val" id="speedVal">0.5</span>
+                        <button id="applySpeedBtn">Apply</button>
+                    </div>
+
+                    <!-- Manual Control Section -->
+                    <div class="setting-group control-group manual-control">
+                        <label style="width: 100%;">🕹️ Manual Control</label>
+                        <div class="btn-grid">
+                            <button class="dir-btn" data-dir="forward">⬆️</button>
+                            <button class="dir-btn" data-dir="left">⬅️</button>
+                            <button class="dir-btn" data-dir="stop" style="background: rgba(233, 69, 96, 0.2); border-color: #e94560; color: #e94560;">⏹️</button>
+                            <button class="dir-btn" data-dir="right">➡️</button>
+                            <button class="dir-btn" data-dir="backward">⬇️</button>
+                            <button class="dir-btn" data-dir="rotate_left">↺</button>
+                            <button class="dir-btn" data-dir="rotate_right">↻</button>
+                        </div>
+                        <div style="width: 100%; text-align: center; font-size: 0.8rem; color: #888; margin-top: 5px;">
+                            <span id="manualStatus">Tap a direction to send command</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Robot State</label>
+                        <span style="color:#4ecdc4;" id="adminStateLabel">Idle</span>
+                        <button id="adminResetBtn">🔄 Reset Robot</button>
+                    </div>
+
+                    <button id="adminLogoutBtn" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#888;padding:8px 20px;border-radius:20px;cursor:pointer;align-self:flex-start;">🚪 Logout</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- MQTT STATUS -->
+        <div class="mqtt-status">
+            <span class="dot offline" id="mqttDot"></span>
+            <span id="mqttLabel">MQTT: Disconnected</span>
+        </div>
+
+    </div>
+
+    <!-- ==========================================================
+    JAVASCRIPT – Web Speech API Only (No external TTS libraries)
+    ========================================================== -->
+    <script>
+        (function() {
+
+            'use strict';
+
+            // ==========================================
+            // CONFIGURATION
+            // ==========================================
+            const CONFIG = {
+                mqttBroker: 'wss://broker.hivemq.com:8884/mqtt',
+                topicArtifact: 'museum/artifact',
+                topicWelcome: 'museum/welcome',
+                topicSensor: 'museum/sensor',
+                topicCrowd: 'museum/crowd',
+                topicState: 'museum/state',
+                topicRobotPos: 'museum/robot_position',
+                topicManualControl: 'museum/manual_control',
+                adminPassword: '1234'
+            };
+
+            // ==========================================
+            // STATE
+            // ==========================================
+            let currentState = 'idle';
+            let currentArtifactData = null;
+            let currentLang = 'en';
+            let isSpeaking = false;
+            let demoMode = false;
+            let demoInterval = null;
+            let mqttClient = null;
+            let mqttConnected = false;
+
+            // ==========================================
+            // DOM REFS
+            // ==========================================
+            const sections = {
+                welcome: document.getElementById('welcome-section'),
+                driving: document.getElementById('driving-section'),
+                presenting: document.getElementById('presenting-section'),
+                admin: document.getElementById('admin-section'),
+            };
+
+            const stateLabel = document.getElementById('stateLabel');
+            const tempDisplay = document.getElementById('tempDisplay');
+            const humidDisplay = document.getElementById('humidDisplay');
+            const crowdCountDisplay = document.getElementById('crowdCountDisplay');
+            const sensorAlert = document.getElementById('sensorAlert');
+            const coordDisplay = document.getElementById('coordDisplay');
+            const progressFill = document.getElementById('progressFill');
+            const etaDisplay = document.getElementById('etaDisplay');
+            const greetingBox = document.getElementById('greetingBox');
+            const artifactDisplay = document.getElementById('artifactDisplay');
+            const artifactImage = document.getElementById('artifactImage');
+            const artifactName = document.getElementById('artifactName');
+            const artifactMeta = document.getElementById('artifactMeta');
+            const artifactDesc = document.getElementById('artifactDesc');
+            const langIndicator = document.getElementById('langIndicator');
+            const langButtons = document.querySelectorAll('.lang-buttons button');
+            const replayBtn = document.getElementById('replayBtn');
+            const doneBtn = document.getElementById('doneBtn');
+            const demoModeBtn = document.getElementById('demoModeBtn');
+            const demoStatus = document.getElementById('demoStatus');
+            const adminToggleBtn = document.getElementById('adminToggleBtn');
+            const adminLogin = document.getElementById('adminLogin');
+            const adminPanel = document.getElementById('adminPanel');
+            const adminPassword = document.getElementById('adminPassword');
+            const adminLoginBtn = document.getElementById('adminLoginBtn');
+            const adminLoginError = document.getElementById('adminLoginError');
+            const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+            const adminStateLabel = document.getElementById('adminStateLabel');
+            const minRangeSlider = document.getElementById('minRangeSlider');
+            const maxRangeSlider = document.getElementById('maxRangeSlider');
+            const minRangeVal = document.getElementById('minRangeVal');
+            const maxRangeVal = document.getElementById('maxRangeVal');
+            const speedSlider = document.getElementById('speedSlider');
+            const speedVal = document.getElementById('speedVal');
+            const applyRangeBtn = document.getElementById('applyRangeBtn');
+            const applySpeedBtn = document.getElementById('applySpeedBtn');
+            const adminResetBtn = document.getElementById('adminResetBtn');
+            const manualStatus = document.getElementById('manualStatus');
+            const mqttDot = document.getElementById('mqttDot');
+            const mqttLabel = document.getElementById('mqttLabel');
+
+            // ==========================================
+            // DEMO MODE
+            // ==========================================
+            const demoArtifacts = [{
+                id: 'vase',
+                name: 'Ancient Ming Vase',
+                origin: 'China',
+                year: '15th Century',
+                material: 'Porcelain',
+                emoji: '🏺',
+                description: 'Exquisite porcelain vase from the Ming Dynasty (1368-1644).',
+                description_ms: 'Pasu porselin yang indah dari Dinasti Ming (1368-1644).',
+                description_fr: 'Vase en porcelaine exquis de la dynastie Ming (1368-1644).',
+                year_ms: 'Abad ke-15',
+                year_fr: '15ème siècle',
+                origin_ms: 'China',
+                origin_fr: 'Chine',
+                material_ms: 'Porselin',
+                material_fr: 'Porcelaine'
+            }, {
+                id: 'bronze',
+                name: 'Roman Bronze Sculpture',
+                origin: 'Roman Empire',
+                year: '100 AD',
+                material: 'Bronze',
+                emoji: '🗿',
+                description: 'Magnificent bronze sculpture of a Roman warrior.',
+                description_ms: 'Patung gangsa yang megah seorang pahlawan Rom.',
+                description_fr: 'Magnifique sculpture en bronze d\'un guerrier romain.',
+                year_ms: '100 Masihi',
+                year_fr: '100 après J.-C.',
+                origin_ms: 'Empayar Rom',
+                origin_fr: 'Empire romain',
+                material_ms: 'Gangsa',
+                material_fr: 'Bronze'
+            }, {
+                id: 'coins',
+                name: 'Ancient Coin Collection',
+                origin: 'Multiple Civilizations',
+                year: '500 BC - 100 AD',
+                material: 'Various Metals',
+                emoji: '🪙',
+                description: 'Rare collection of 25 coins from ancient civilizations.',
+                description_ms: 'Koleksi jarang 25 syiling dari tamadun purba.',
+                description_fr: 'Rare collection de 25 pièces de civilisations anciennes.',
+                year_ms: '500 SM - 100 Masihi',
+                year_fr: '500 av. J.-C. - 100 après J.-C.',
+                origin_ms: 'Pelbagai Tamadun',
+                origin_fr: 'Civilisations multiples',
+                material_ms: 'Pelbagai Logam',
+                material_fr: 'Métaux variés'
+            }];
+
+            // Demo state machine
+            let demoState = 'idle';
+            let demoStep = 0;
+
+            function startDemo() {
+                if (demoMode) return;
+                demoMode = true;
+                demoState = 'idle';
+                demoStep = 0;
+                demoModeBtn.textContent = '⏹️ Stop Demo';
+                demoStatus.textContent = 'Demo: Running';
+                demoStatus.style.color = '#4ecdc4';
+
+                let temp = 24;
+                let humid = 55;
+
+                demoInterval = setInterval(() => {
+                    demoStep++;
+                    temp = 24 + Math.sin(demoStep * 0.1) * 2;
+                    humid = 55 + Math.sin(demoStep * 0.15 + 1) * 5;
+                    handleSensor({ temperature: temp, humidity: humid });
+
+                    switch (demoState) {
+                        case 'idle':
+                            if (demoStep % 8 === 0) {
+                                const crowdCount = Math.floor(Math.random() * 3) + 2;
+                                const targetX = parseFloat((Math.random() * 3 + 1).toFixed(1));
+                                const targetY = parseFloat((Math.random() * 3 + 1).toFixed(1));
+                                handleCrowd({ count: crowdCount, moving: true, target_x: targetX, target_y: targetY,
+                                    progress: 0.1, eta: 8.0 });
+                                handleState({ state: 'moving' });
+                                demoState = 'moving';
+                                window.demoTargetX = targetX;
+                                window.demoTargetY = targetY;
+                                window.demoProgress = 0.1;
+                                window.demoEta = 8.0;
+                            }
+                            break;
+
+                        case 'moving':
+                            if (window.demoProgress !== undefined) {
+                                window.demoProgress += 0.05;
+                                if (window.demoProgress > 0.95) {
+                                    window.demoProgress = 1.0;
+                                    window.demoEta = 0;
+                                    handleCrowd({ count: 2, moving: true, target_x: window.demoTargetX, target_y: window
+                                            .demoTargetY,
+                                        progress: 1.0, eta: 0 });
+                                    handleState({ state: 'presenting' });
+                                    greetingBox.textContent = '👋 Hello! Welcome to the museum!';
+                                    const artifact = demoArtifacts[Math.floor(Math.random() * demoArtifacts.length)];
+                                    handleArtifact(artifact);
+                                    handleWelcome({ message: 'Hello! Welcome to the museum!' });
+                                    demoState = 'presenting';
+                                } else {
+                                    window.demoEta = Math.max(0, (1 - window.demoProgress) * 8);
+                                    handleCrowd({
+                                        count: 2,
+                                        moving: true,
+                                        target_x: window.demoTargetX,
+                                        target_y: window.demoTargetY,
+                                        progress: window.demoProgress,
+                                        eta: window.demoEta
+                                    });
+                                }
+                            }
+                            break;
+
+                        case 'presenting':
+                            break;
+
+                        default:
+                            break;
+                    }
+                }, 2000);
+            }
+
+            function stopDemo() {
+                if (demoInterval) {
+                    clearInterval(demoInterval);
+                    demoInterval = null;
+                }
+                demoMode = false;
+                demoState = 'idle';
+                demoModeBtn.textContent = '▶️ Start Demo';
+                demoStatus.textContent = 'Demo: Off';
+                demoStatus.style.color = '#888';
+                handleState({ state: 'idle' });
+                handleCrowd({ count: 0, moving: false });
+                progressFill.style.width = '0%';
+                etaDisplay.textContent = '⏱️ ETA: -- s';
+                coordDisplay.textContent = 'Target: (--, --)';
+            }
+
+            demoModeBtn.addEventListener('click', function() {
+                if (demoMode) {
+                    stopDemo();
+                } else {
+                    startDemo();
+                }
+            });
+
+            // ==========================================
+            // MQTT CLIENT
+            // ==========================================
+            function connectMQTT() {
+                try {
+                    mqttClient = mqtt.connect(CONFIG.mqttBroker, {
+                        keepalive: 60,
+                        reconnectPeriod: 3000,
+                    });
+
+                    mqttClient.on('connect', function() {
+                        console.log('✅ MQTT connected');
+                        mqttConnected = true;
+                        mqttDot.className = 'dot online';
+                        mqttLabel.textContent = 'MQTT: Connected';
+
+                        mqttClient.subscribe(CONFIG.topicArtifact);
+                        mqttClient.subscribe(CONFIG.topicWelcome);
+                        mqttClient.subscribe(CONFIG.topicSensor);
+                        mqttClient.subscribe(CONFIG.topicCrowd);
+                        mqttClient.subscribe(CONFIG.topicState);
+                        mqttClient.subscribe(CONFIG.topicRobotPos);
+                        console.log('📡 Subscribed to all topics');
+                    });
+
+                    mqttClient.on('message', function(topic, message) {
+                        const payload = message.toString();
+                        console.log(`📩 MQTT: ${topic} → ${payload}`);
+                        handleMqttMessage(topic, payload);
+                    });
+
+                    mqttClient.on('error', function(err) {
+                        console.error('❌ MQTT error:', err);
+                        mqttDot.className = 'dot offline';
+                        mqttLabel.textContent = 'MQTT: Error';
+                    });
+
+                    mqttClient.on('close', function() {
+                        console.warn('⚠️ MQTT disconnected');
+                        mqttConnected = false;
+                        mqttDot.className = 'dot offline';
+                        mqttLabel.textContent = 'MQTT: Disconnected';
+                    });
+
+                } catch (e) {
+                    console.error('❌ MQTT init error:', e);
+                }
+            }
+
+            // ==========================================
+            // MQTT MESSAGE HANDLER
+            // ==========================================
+            function handleMqttMessage(topic, payload) {
+                try {
+                    const data = JSON.parse(payload);
+                    switch (topic) {
+                        case CONFIG.topicArtifact:
+                            handleArtifact(data);
+                            break;
+                        case CONFIG.topicWelcome:
+                            handleWelcome(data);
+                            break;
+                        case CONFIG.topicSensor:
+                            handleSensor(data);
+                            break;
+                        case CONFIG.topicCrowd:
+                            handleCrowd(data);
+                            break;
+                        case CONFIG.topicState:
+                            handleState(data);
+                            break;
+                        case CONFIG.topicRobotPos:
+                            handleRobotPos(data);
+                            break;
+                        default:
+                            console.log('📬 Unhandled topic:', topic);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Could not parse MQTT payload:', payload);
+                }
+            }
+
+            // ==========================================
+            // HANDLERS
+            // ==========================================
+
+            function handleArtifact(data) {
+                console.log('🏺 Artifact detected:', data);
+                currentArtifactData = data;
+                if (currentState !== 'presenting') {
+                    switchSection('presenting');
+                }
+                displayArtifact(data, currentLang);
+                speakCurrentArtifact();
+            }
+
+            function handleWelcome(data) {
+                console.log('👋 Welcome trigger:', data);
+                if (data.message) {
+                    greetingBox.textContent = '👋 ' + data.message;
+                }
+                switchSection('presenting');
+            }
+
+            function handleSensor(data) {
+                console.log('🌡️ Sensor data:', data);
+                if (data.temperature !== undefined) {
+                    tempDisplay.textContent = data.temperature.toFixed(1) + '°C';
+                }
+                if (data.humidity !== undefined) {
+                    humidDisplay.textContent = data.humidity.toFixed(1) + '%';
+                }
+                checkSensorAlert(data);
+            }
+
+            function handleCrowd(data) {
+                if (data.target_x !== undefined) data.target_x = parseFloat(data.target_x);
+                if (data.target_y !== undefined) data.target_y = parseFloat(data.target_y);
+                if (data.progress !== undefined) data.progress = parseFloat(data.progress);
+                if (data.eta !== undefined) data.eta = parseFloat(data.eta);
+
+                console.log('👥 Crowd data:', data);
+                if (data.count !== undefined) {
+                    crowdCountDisplay.textContent = data.count;
+                }
+                if (data.count >= 2 && data.moving === true) {
+                    if (currentState !== 'presenting') {
+                        switchSection('driving');
+                    }
+                    if (data.target_x !== undefined && data.target_y !== undefined) {
+                        coordDisplay.textContent = `Target: (${data.target_x.toFixed(1)}, ${data.target_y.toFixed(1)})`;
+                    }
+                    if (data.progress !== undefined) {
+                        progressFill.style.width = Math.min(100, data.progress * 100) + '%';
+                    }
+                    if (data.eta !== undefined) {
+                        etaDisplay.textContent = `⏱️ ETA: ${data.eta.toFixed(1)} s`;
+                    }
+                }
+                if (data.count === 0 && currentState === 'idle') {}
+            }
+
+            function handleState(data) {
+                console.log('📊 Robot state:', data);
+                if (data.state) {
+                    stateLabel.textContent = data.state.charAt(0).toUpperCase() + data.state.slice(1);
+                    adminStateLabel.textContent = data.state.charAt(0).toUpperCase() + data.state.slice(1);
+                }
+                if (currentState !== 'presenting') {
+                    if (data.state === 'idle') {
+                        switchSection('welcome');
+                    } else if (data.state === 'moving' || data.state === 'driving') {
+                        switchSection('driving');
+                    } else if (data.state === 'presenting' || data.state === 'greeting') {
+                        switchSection('presenting');
+                    }
+                }
+            }
+
+            function handleRobotPos(data) {
+                if (currentState === 'driving') {
+                    if (data.target_x !== undefined && data.target_y !== undefined) {
+                        coordDisplay.textContent = `Target: (${data.target_x.toFixed(1)}, ${data.target_y.toFixed(1)})`;
+                    }
+                    if (data.progress !== undefined) {
+                        progressFill.style.width = Math.min(100, data.progress * 100) + '%';
+                    }
+                    if (data.eta !== undefined) {
+                        etaDisplay.textContent = `⏱️ ETA: ${data.eta.toFixed(1)} s`;
+                    }
+                }
+            }
+
+            // ==========================================
+            // DISPLAY ARTIFACT
+            // ==========================================
+            function displayArtifact(artifact, lang) {
+                if (!artifact) return;
+
+                let name = artifact.name || 'Unknown Artifact';
+                let desc = artifact.description || 'No description.';
+                let year = artifact.year || '';
+                let origin = artifact.origin || '';
+                let material = artifact.material || '';
+                let emoji = artifact.emoji || '🏺';
+
+                if (lang === 'ms') {
+                    desc = artifact.description_ms || desc;
+                    year = artifact.year_ms || year;
+                    origin = artifact.origin_ms || origin;
+                    material = artifact.material_ms || material;
+                } else if (lang === 'fr') {
+                    desc = artifact.description_fr || desc;
+                    year = artifact.year_fr || year;
+                    origin = artifact.origin_fr || origin;
+                    material = artifact.material_fr || material;
+                }
+
+                artifactName.textContent = name;
+                artifactMeta.textContent = [origin, year, material].filter(Boolean).join(' • ') || 'Unknown origin';
+                artifactDesc.textContent = desc;
+
+                if (artifact.image_url) {
+                    artifactImage.innerHTML = `<img src="${artifact.image_url}" alt="${name}" />`;
+                } else {
+                    artifactImage.textContent = emoji;
+                }
+
+                artifactDisplay.classList.add('active');
+
+                window.currentSpeakText = `${name}. ${desc}`;
+                window.currentLangCode = lang === 'ms' ? 'ms-MY' : (lang === 'fr' ? 'fr-FR' : 'en-US');
+
+                const langNames = { 'ms': 'Bahasa Melayu', 'en': 'English', 'fr': 'Français' };
+                langIndicator.textContent = `🔊 Speaking: ${langNames[lang] || 'English'}`;
+
+                langButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.lang === lang) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+
+            // ==========================================
+            // SPEAK CURRENT ARTIFACT (Web Speech API)
+            // ==========================================
+            function speakCurrentArtifact() {
+                if (!window.currentSpeakText) return;
+                const text = window.currentSpeakText;
+                const langCode = window.currentLangCode || 'en-US';
+
+                // Cancel any ongoing speech
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = langCode;
+                utterance.rate = 0.9;
+                utterance.pitch = 1.0;
+
+                // Try to find a matching voice
+                const voices = window.speechSynthesis.getVoices();
+                let voice = voices.find(v => v.lang === langCode);
+                if (!voice) {
+                    const prefix = langCode.split('-')[0];
+                    voice = voices.find(v => v.lang.startsWith(prefix));
+                }
+                if (voice) {
+                    utterance.voice = voice;
+                    console.log(`🗣️ Using voice: ${voice.name} (${voice.lang})`);
+                } else {
+                    console.warn(`⚠️ No voice found for ${langCode}, using default.`);
+                }
+
+                utterance.onstart = function() {
+                    isSpeaking = true;
+                    langIndicator.textContent = `🔊 Speaking: ${text.substring(0, 40)}...`;
+                };
+
+                utterance.onend = function() {
+                    isSpeaking = false;
+                    langIndicator.textContent = `✅ Finished speaking (${langCode})`;
+                };
+
+                utterance.onerror = function(e) {
+                    console.error('❌ Speech error:', e);
+                    isSpeaking = false;
+                    langIndicator.textContent = `❌ Speech error`;
+                };
+
+                window.speechSynthesis.speak(utterance);
+            }
+
+            // ==========================================
+            // SENSOR ALERT
+            // ==========================================
+            function checkSensorAlert(data) {
+                let alertMsg = '';
+                let alertClass = '';
+
+                if (data.temperature !== undefined) {
+                    if (data.temperature > 30) {
+                        alertMsg = '⚠️ Temperature is too HIGH! Artifacts may be at risk.';
+                        alertClass = 'danger';
+                    } else if (data.temperature < 15) {
+                        alertMsg = '⚠️ Temperature is too LOW! Artifacts may be at risk.';
+                        alertClass = 'danger';
+                    }
+                }
+
+                if (data.humidity !== undefined) {
+                    if (data.humidity > 70) {
+                        alertMsg = alertMsg || '⚠️ Humidity is too HIGH! Artifacts may be at risk.';
+                        alertClass = 'danger';
+                    } else if (data.humidity < 20) {
+                        alertMsg = alertMsg || '⚠️ Humidity is too LOW! Artifacts may be at risk.';
+                        alertClass = 'danger';
+                    }
+                }
+
+                if (alertMsg) {
+                    sensorAlert.textContent = alertMsg;
+                    sensorAlert.className = 'sensor-alert ' + alertClass;
+                    sensorAlert.style.display = 'block';
+                } else {
+                    sensorAlert.textContent = '✅ Temperature and humidity are within safe range.';
+                    sensorAlert.className = 'sensor-alert';
+                    sensorAlert.style.display = 'block';
+                    sensorAlert.style.background = 'rgba(78, 205, 196, 0.10)';
+                    sensorAlert.style.border = '1px solid rgba(78, 205, 196, 0.2)';
+                    sensorAlert.style.color = '#4ecdc4';
+                }
+            }
+
+            // ==========================================
+            // SECTION SWITCHING
+            // ==========================================
+            function switchSection(sectionName) {
+                Object.keys(sections).forEach(key => {
+                    sections[key].classList.remove('active');
+                });
+                if (sections[sectionName]) {
+                    sections[sectionName].classList.add('active');
+                    currentState = sectionName;
+                    const stateMap = {
+                        'welcome': 'Idle',
+                        'driving': 'Driving',
+                        'presenting': 'Presenting',
+                        'admin': 'Admin'
+                    };
+                    stateLabel.textContent = stateMap[sectionName] || sectionName;
+                    adminStateLabel.textContent = stateMap[sectionName] || sectionName;
+                }
+            }
+
+            // ==========================================
+            // ADMIN
+            // ==========================================
+            let adminLoggedIn = false;
+
+            adminToggleBtn.addEventListener('click', function() {
+                if (adminLoggedIn) {
+                    switchSection('admin');
+                } else {
+                    switchSection('admin');
+                    adminLogin.classList.remove('hidden');
+                    adminPanel.classList.remove('active');
+                }
+            });
+
+            adminLoginBtn.addEventListener('click', function() {
+                const pass = adminPassword.value.trim();
+                if (pass === CONFIG.adminPassword) {
+                    adminLoggedIn = true;
+                    adminLogin.classList.add('hidden');
+                    adminPanel.classList.add('active');
+                    adminLoginError.textContent = '';
+                    adminPassword.value = '';
+                } else {
+                    adminLoginError.textContent = '❌ Incorrect password. Try again.';
+                }
+            });
+
+            adminPassword.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    adminLoginBtn.click();
+                }
+            });
+
+            adminLogoutBtn.addEventListener('click', function() {
+                adminLoggedIn = false;
+                adminLogin.classList.remove('hidden');
+                adminPanel.classList.remove('active');
+                adminLoginError.textContent = '';
+                switchSection('welcome');
+            });
+
+            minRangeSlider.addEventListener('input', function() {
+                minRangeVal.textContent = parseFloat(this.value).toFixed(1);
+            });
+            maxRangeSlider.addEventListener('input', function() {
+                maxRangeVal.textContent = parseFloat(this.value).toFixed(1);
+            });
+            speedSlider.addEventListener('input', function() {
+                speedVal.textContent = parseFloat(this.value).toFixed(2);
+            });
+
+            applyRangeBtn.addEventListener('click', function() {
+                const min = parseFloat(minRangeSlider.value);
+                const max = parseFloat(maxRangeSlider.value);
+                publishMqtt('museum/admin/range', { min: min, max: max });
+                alert(`✅ Detection range set to ${min}m - ${max}m`);
+            });
+
+            applySpeedBtn.addEventListener('click', function() {
+                const speed = parseFloat(speedSlider.value);
+                publishMqtt('museum/admin/speed', { speed: speed });
+                alert(`✅ Movement speed set to ${speed.toFixed(2)} m/s`);
+            });
+
+            adminResetBtn.addEventListener('click', function() {
+                if (confirm('Reset robot to idle state?')) {
+                    publishMqtt('museum/admin/reset', { action: 'reset' });
+                    switchSection('welcome');
+                    if (demoMode) stopDemo();
+                }
+            });
+
+            // ==========================================
+            // MANUAL CONTROL
+            // ==========================================
+            const dirButtons = document.querySelectorAll('.dir-btn');
+
+            const dirMap = {
+                'forward': { x: 0.3, y: 0, z: 0 },
+                'backward': { x: -0.3, y: 0, z: 0 },
+                'left': { x: 0, y: 0.3, z: 0 },
+                'right': { x: 0, y: -0.3, z: 0 },
+                'rotate_left': { x: 0, y: 0, z: 0.5 },
+                'rotate_right': { x: 0, y: 0, z: -0.5 },
+                'stop': { x: 0, y: 0, z: 0 }
+            };
+
+            dirButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const dir = this.dataset.dir;
+                    const cmd = dirMap[dir];
+                    if (!cmd) return;
+
+                    publishMqtt(CONFIG.topicManualControl, {
+                        command: dir,
+                        linear_x: cmd.x,
+                        linear_y: cmd.y,
+                        angular_z: cmd.z
+                    });
+
+                    const dirNames = {
+                        'forward': '⬆️ Forward',
+                        'backward': '⬇️ Backward',
+                        'left': '⬅️ Left',
+                        'right': '➡️ Right',
+                        'rotate_left': '↺ Rotate Left',
+                        'rotate_right': '↻ Rotate Right',
+                        'stop': '⏹️ Stop'
+                    };
+                    manualStatus.textContent = `🚀 Sent: ${dirNames[dir] || dir}`;
+                    manualStatus.style.color = '#4ecdc4';
+
+                    setTimeout(() => {
+                        manualStatus.textContent = 'Tap a direction to send command';
+                        manualStatus.style.color = '#888';
+                    }, 2000);
+                });
+
+                btn.addEventListener('touchstart', function(e) {}, { passive: true });
+            });
+
+            // ==========================================
+            // PUBLISH MQTT
+            // ==========================================
+            function publishMqtt(topic, data) {
+                if (mqttClient && mqttConnected) {
+                    const payload = JSON.stringify(data);
+                    mqttClient.publish(topic, payload);
+                    console.log(`📤 MQTT publish: ${topic} → ${payload}`);
+                } else {
+                    console.warn('⚠️ MQTT not connected, cannot publish');
+                }
+            }
+
+            // ==========================================
+            // PRESENTING BUTTONS
+            // ==========================================
+
+            langButtons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const lang = this.dataset.lang;
+                    currentLang = lang;
+                    if (currentArtifactData) {
+                        displayArtifact(currentArtifactData, lang);
+                        speakCurrentArtifact();
+                    }
+                });
+            });
+
+            replayBtn.addEventListener('click', function() {
+                if (currentArtifactData) {
+                    speakCurrentArtifact();
+                } else {
+                    alert('No artifact data to replay.');
+                }
+            });
+
+            doneBtn.addEventListener('click', function() {
+                publishMqtt('museum/done', { action: 'done' });
+                artifactDisplay.classList.remove('active');
+                greetingBox.textContent = '👋 Thank you for visiting!';
+                switchSection('welcome');
+                sensorAlert.style.display = 'none';
+                sensorAlert.className = 'sensor-alert';
+                if (demoMode) {
+                    demoState = 'idle';
+                    progressFill.style.width = '0%';
+                    etaDisplay.textContent = '⏱️ ETA: -- s';
+                    coordDisplay.textContent = 'Target: (--, --)';
+                    crowdCountDisplay.textContent = '0';
+                }
+                currentArtifactData = null;
+            });
+
+            // ==========================================
+            // LOAD VOICES (for Web Speech)
+            // ==========================================
+            if (window.speechSynthesis) {
+                window.speechSynthesis.getVoices();
+                window.speechSynthesis.onvoiceschanged = function() {
+                    window.speechSynthesis.getVoices();
+                };
+            }
+
+            // ==========================================
+            // INIT
+            // ==========================================
+            console.log('🏛️ Museum Guide Webpage Starting...');
+            console.log('📡 Connecting to MQTT broker:', CONFIG.mqttBroker);
+            console.log('🗣️ Using Web Speech API (built-in browser TTS)');
+
+            connectMQTT();
+            switchSection('welcome');
+            tempDisplay.textContent = '--°C';
+            humidDisplay.textContent = '--%';
+            crowdCountDisplay.textContent = '0';
+
+            console.log('✅ Ready! Use "Start Demo" to simulate robot data.');
+
+        })();
+    </script>
+
+</body>
+</html>

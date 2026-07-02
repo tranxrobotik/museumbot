@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
-    <title>🏛️ Museum Guide Robot</title>
+    <title>🏛️ Museum Guide Robot – Admin Dashboard</title>
 
     <!-- MQTT Library -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js">
+    </script>
+    <!-- Chart.js – using Cloudflare CDN (reliable) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js">
     </script>
 
     <style>
@@ -66,6 +69,9 @@
             }
         }
 
+        /* ==========================================
+           TOP BAR
+           ========================================== */
         .top-bar {
             display: flex;
             flex-wrap: wrap;
@@ -139,11 +145,13 @@
             color: #fff;
         }
 
+        /* ==========================================
+           WELCOME / DASHBOARD (Clean – no charts)
+           ========================================== */
         #welcome-section .welcome-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
             text-align: center;
             gap: 12px;
@@ -239,6 +247,13 @@
         .sensor-card .value.humid {
             color: #4ecdc4;
         }
+        .sensor-card .value.crowd {
+            color: #ffd93d;
+        }
+        .sensor-card .value.location {
+            color: #a29bfe;
+            font-size: 1.2rem;
+        }
 
         .sensor-alert {
             margin-top: 12px;
@@ -265,6 +280,111 @@
             color: #ffd93d;
         }
 
+        .manual-control-panel {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 15px 20px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .manual-control-panel .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            max-width: 250px;
+            margin: 10px auto 0;
+        }
+
+        .manual-control-panel .btn-grid button {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 12px 0;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: 0.2s;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .manual-control-panel .btn-grid button:active {
+            transform: scale(0.92);
+            background: rgba(233, 69, 96, 0.3);
+        }
+
+        .manual-control-panel .btn-grid .stop-btn {
+            background: rgba(233, 69, 96, 0.2);
+            border-color: #e94560;
+            color: #e94560;
+        }
+
+        .manual-control-panel .btn-grid .stop-btn:active {
+            background: rgba(233, 69, 96, 0.4);
+        }
+
+        .manual-control-panel .status-text {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 8px;
+        }
+
+        .manual-control-panel .reset-wrap {
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .manual-control-panel .reset-wrap button {
+            background: rgba(233, 69, 96, 0.15);
+            border: 1px solid #e94560;
+            color: #e94560;
+            padding: 6px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.3s;
+        }
+
+        .manual-control-panel .reset-wrap button:hover {
+            background: rgba(233, 69, 96, 0.25);
+        }
+
+        .demo-wrap {
+            margin-top: 15px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .demo-wrap button {
+            background: rgba(78, 205, 196, 0.15);
+            border: 1px solid #4ecdc4;
+            color: #4ecdc4;
+            padding: 8px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        .demo-wrap button:hover {
+            background: rgba(78, 205, 196, 0.25);
+        }
+
+        .demo-wrap span {
+            color: #888;
+            font-size: 0.85rem;
+            align-self: center;
+        }
+
+        /* ==========================================
+           DRIVING
+           ========================================== */
         #driving-section .driving-content {
             flex: 1;
             display: flex;
@@ -331,6 +451,9 @@
             font-size: 0.9rem;
         }
 
+        /* ==========================================
+           PRESENTING
+           ========================================== */
         #presenting-section .presenting-content {
             flex: 1;
             display: flex;
@@ -497,6 +620,9 @@
             background: rgba(78, 205, 196, 0.2);
         }
 
+        /* ==========================================
+           ADMIN SECTION
+           ========================================== */
         #admin-section .admin-content {
             flex: 1;
             display: flex;
@@ -547,12 +673,44 @@
             display: flex;
         }
 
-        #admin-section .admin-panel h2 {
-            color: #e94560;
-            font-size: 1.3rem;
+        .admin-tabs {
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 10px;
         }
 
-        #admin-section .admin-panel .setting-group {
+        .admin-tabs button {
+            background: transparent;
+            border: none;
+            color: #888;
+            padding: 6px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.3s;
+        }
+
+        .admin-tabs button.active {
+            background: rgba(233, 69, 96, 0.15);
+            color: #e94560;
+        }
+
+        .admin-tabs button:hover {
+            color: #fff;
+        }
+
+        .admin-tab-content {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .admin-tab-content.active {
+            display: flex;
+        }
+
+        .setting-group {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 14px;
@@ -563,13 +721,13 @@
             gap: 10px;
         }
 
-        #admin-section .admin-panel .setting-group label {
+        .setting-group label {
             color: #aaa;
             font-size: 0.8rem;
             min-width: 80px;
         }
 
-        #admin-section .admin-panel .setting-group input[type="range"] {
+        .setting-group input[type="range"] {
             flex: 1;
             min-width: 100px;
             accent-color: #e94560;
@@ -578,7 +736,18 @@
             border-radius: 4px;
         }
 
-        #admin-section .admin-panel .setting-group .val {
+        .setting-group input[type="number"] {
+            flex: 0 0 80px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #eee;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            width: 80px;
+        }
+
+        .setting-group .val {
             color: #4ecdc4;
             font-weight: 600;
             min-width: 35px;
@@ -586,7 +755,7 @@
             font-size: 0.9rem;
         }
 
-        #admin-section .admin-panel .setting-group button {
+        .setting-group .update-btn {
             background: rgba(233, 69, 96, 0.15);
             border: 1px solid rgba(233, 69, 96, 0.2);
             color: #e94560;
@@ -597,49 +766,287 @@
             font-size: 0.8rem;
         }
 
-        #admin-section .admin-panel .setting-group button:hover {
+        .setting-group .update-btn:hover {
             background: rgba(233, 69, 96, 0.25);
         }
 
-        .control-group.manual-control {
-            flex-direction: column;
-            align-items: stretch;
+        .setting-group .description {
+            color: #666;
+            font-size: 0.7rem;
+            width: 100%;
+            text-align: right;
+            margin-top: 2px;
         }
 
-        .control-group.manual-control .btn-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            max-width: 300px;
-            margin: 5px auto 0;
+        .config-refresh-wrap {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 10px;
         }
 
-        .control-group.manual-control .btn-grid button {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #fff;
-            padding: 12px 0;
-            border-radius: 12px;
-            font-size: 1.5rem;
+        .config-refresh-wrap button {
+            background: rgba(78, 205, 196, 0.15);
+            border: 1px solid #4ecdc4;
+            color: #4ecdc4;
+            padding: 4px 16px;
+            border-radius: 20px;
             cursor: pointer;
-            transition: 0.2s;
-            user-select: none;
-            touch-action: manipulation;
+            font-size: 0.8rem;
+            transition: 0.3s;
         }
 
-        .control-group.manual-control .btn-grid button:active {
-            transform: scale(0.92);
-            background: rgba(233, 69, 96, 0.3);
+        .config-refresh-wrap button:hover {
+            background: rgba(78, 205, 196, 0.25);
         }
 
-        .control-group.manual-control .btn-grid .stop-btn {
-            background: rgba(233, 69, 96, 0.2);
+        .config-status {
+            font-size: 0.7rem;
+            color: #666;
+            text-align: right;
+            margin-top: 2px;
+        }
+
+        .save-all-wrap {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 5px;
+        }
+
+        .save-all-wrap button {
+            background: #4ecdc4;
+            border: none;
+            color: #0a0a1a;
+            padding: 8px 24px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .save-all-wrap button:hover {
+            background: #3ab0a8;
+        }
+
+        /* Charts in Admin */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 5px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 15px;
+            position: relative;
+            height: 220px;
+        }
+
+        .chart-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .log-table-wrap {
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .log-table th,
+        .log-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: left;
+        }
+
+        .log-table th {
+            color: #888;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            background: #1a1a3e;
+        }
+
+        .log-table td {
+            color: #ccc;
+            font-size: 0.75rem;
+        }
+
+        .log-table .ack-btn {
+            background: rgba(78, 205, 196, 0.15);
+            border: 1px solid #4ecdc4;
+            color: #4ecdc4;
+            padding: 2px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.65rem;
+            transition: 0.3s;
+        }
+
+        .log-table .ack-btn:hover {
+            background: rgba(78, 205, 196, 0.25);
+        }
+
+        .log-table .ack-btn.acknowledged {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: #666;
+            color: #666;
+            cursor: default;
+        }
+
+        .log-table .status-badge {
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+
+        .log-table .status-badge.danger {
+            background: rgba(255, 50, 50, 0.15);
+            color: #ff6b6b;
+        }
+
+        .log-table .status-badge.warning {
+            background: rgba(255, 200, 50, 0.12);
+            color: #ffd93d;
+        }
+
+        .log-table .status-badge.good {
+            background: rgba(78, 205, 196, 0.12);
+            color: #4ecdc4;
+        }
+
+        .log-refresh {
+            font-size: 0.7rem;
+            color: #666;
+            text-align: right;
+        }
+
+        .artifact-table-wrap {
+            overflow-x: auto;
+        }
+
+        .artifact-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .artifact-table th,
+        .artifact-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: left;
+        }
+
+        .artifact-table th {
+            color: #888;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+        }
+
+        .artifact-table td {
+            color: #ccc;
+        }
+
+        .artifact-table .actions button {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            padding: 2px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            margin-right: 4px;
+            transition: 0.3s;
+        }
+
+        .artifact-table .actions button:hover {
+            background: rgba(233, 69, 96, 0.15);
             border-color: #e94560;
-            color: #e94560;
+            color: #fff;
         }
 
-        .control-group.manual-control .btn-grid .stop-btn:active {
-            background: rgba(233, 69, 96, 0.4);
+        .artifact-table .actions button.delete:hover {
+            background: rgba(255, 50, 50, 0.15);
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .artifact-form {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 16px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .artifact-form.active {
+            display: flex;
+        }
+
+        .artifact-form .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .artifact-form .form-row input,
+        .artifact-form .form-row textarea {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #eee;
+            padding: 8px 12px;
+            border-radius: 8px;
+            flex: 1 1 200px;
+            font-size: 0.85rem;
+        }
+
+        .artifact-form .form-row textarea {
+            flex-basis: 100%;
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        .artifact-form .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .artifact-form .form-actions button {
+            background: rgba(233, 69, 96, 0.15);
+            border: 1px solid rgba(233, 69, 96, 0.2);
+            color: #e94560;
+            padding: 6px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.8rem;
+        }
+
+        .artifact-form .form-actions button:hover {
+            background: rgba(233, 69, 96, 0.25);
         }
 
         .mqtt-status {
@@ -676,6 +1083,12 @@
         ::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
+        }
+
+        @media (max-width: 800px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 600px) {
@@ -739,21 +1152,22 @@
                 font-size: 0.8rem;
                 padding: 6px 16px;
             }
-            #admin-section .admin-panel .setting-group {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            #admin-section .admin-panel .setting-group label {
-                min-width: auto;
-            }
-            #admin-section .admin-panel .setting-group input[type="range"] {
-                min-width: auto;
-            }
             .mqtt-status {
                 font-size: 0.6rem;
             }
-            .control-group.manual-control .btn-grid {
+            .manual-control-panel .btn-grid {
                 max-width: 100%;
+            }
+            .chart-container {
+                height: 180px;
+                padding: 10px;
+            }
+            .log-table-wrap {
+                max-height: 200px;
+            }
+            .setting-group input[type="number"] {
+                flex: 0 0 60px;
+                width: 60px;
             }
         }
 
@@ -798,7 +1212,7 @@
             <button class="admin-btn" id="adminToggleBtn">⚙️ Admin</button>
         </div>
 
-        <!-- ========== WELCOME / IDLE ========== -->
+        <!-- ========== WELCOME / DASHBOARD (Clean – no charts) ========== -->
         <div id="welcome-section" class="section active">
             <div class="welcome-content">
                 <div class="robot-face">
@@ -808,6 +1222,7 @@
                 <h2>Welcome to the <strong>Museum</strong></h2>
                 <p class="sub">I'm your autonomous guide. I'll detect crowds, move to them, and present artifacts.</p>
 
+                <!-- Sensor Cards -->
                 <div class="sensor-row">
                     <div class="sensor-card">
                         <div class="value temp" id="tempDisplay">--</div>
@@ -818,17 +1233,39 @@
                         <div class="label">💧 Humidity</div>
                     </div>
                     <div class="sensor-card">
-                        <div class="value" id="crowdCountDisplay" style="color:#ffd93d;">0</div>
+                        <div class="value crowd" id="crowdCountDisplay">0</div>
                         <div class="label">👥 People Detected</div>
+                    </div>
+                    <div class="sensor-card">
+                        <div class="value location" id="crowdLocationDisplay">--</div>
+                        <div class="label">📍 Crowd Location</div>
                     </div>
                 </div>
 
                 <div id="sensorAlert" class="sensor-alert"></div>
 
-                <!-- Demo Mode Toggle -->
-                <div style="margin-top: 15px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
-                    <button id="demoModeBtn" style="background: rgba(78, 205, 196, 0.15); border: 1px solid #4ecdc4; color: #4ecdc4; padding: 8px 24px; border-radius: 30px; cursor: pointer; font-size: 0.9rem;">▶️ Start Demo</button>
-                    <span id="demoStatus" style="color: #888; font-size: 0.85rem; align-self: center;">Demo: Off</span>
+                <!-- Manual Control -->
+                <div class="manual-control-panel">
+                    <div style="text-align:center; font-weight:600; color:#aaa; margin-bottom:6px;">🕹️ Manual Control</div>
+                    <div class="btn-grid">
+                        <button class="dir-btn" data-dir="forward">⬆️</button>
+                        <button class="dir-btn" data-dir="left">⬅️</button>
+                        <button class="dir-btn" data-dir="stop" style="background: rgba(233, 69, 96, 0.2); border-color: #e94560; color: #e94560;">⏹️</button>
+                        <button class="dir-btn" data-dir="right">➡️</button>
+                        <button class="dir-btn" data-dir="backward">⬇️</button>
+                        <button class="dir-btn" data-dir="rotate_left">↺</button>
+                        <button class="dir-btn" data-dir="rotate_right">↻</button>
+                    </div>
+                    <div class="status-text" id="manualStatus">Tap a direction to send command</div>
+                    <div class="reset-wrap">
+                        <button id="resetRobotBtn">🔄 Reset Robot</button>
+                    </div>
+                </div>
+
+                <!-- Demo Mode -->
+                <div class="demo-wrap">
+                    <button id="demoModeBtn">▶️ Start Demo</button>
+                    <span id="demoStatus">Demo: Off</span>
                 </div>
             </div>
         </div>
@@ -849,15 +1286,9 @@
         <!-- ========== PRESENTING ========== -->
         <div id="presenting-section" class="section">
             <div class="presenting-content">
-
-                <div class="greeting-box" id="greetingBox">
-                    👋 Hello! Welcome to the museum!
-                </div>
-
+                <div class="greeting-box" id="greetingBox">👋 Hello! Welcome to the museum!</div>
                 <div class="artifact-display" id="artifactDisplay">
-                    <div class="image-area" id="artifactImage">
-                        🏺
-                    </div>
+                    <div class="image-area" id="artifactImage">🏺</div>
                     <div class="info-area">
                         <h3 id="artifactName">Artifact Name</h3>
                         <div class="meta" id="artifactMeta">Origin • Year • Material</div>
@@ -870,12 +1301,10 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="action-row">
                     <button class="secondary" id="replayBtn">🔁 Replay Info</button>
                     <button class="primary" id="doneBtn">✅ Done / Finish</button>
                 </div>
-
             </div>
         </div>
 
@@ -883,6 +1312,7 @@
         <div id="admin-section" class="section">
             <div class="admin-content">
 
+                <!-- Login -->
                 <div class="admin-login" id="adminLogin">
                     <h2 style="color:#e94560;">🔐 Admin Login</h2>
                     <input type="password" id="adminPassword" placeholder="Enter password..." />
@@ -890,52 +1320,248 @@
                     <span style="color:#888;font-size:0.8rem;" id="adminLoginError"></span>
                 </div>
 
+                <!-- Admin Panel -->
                 <div class="admin-panel" id="adminPanel">
-                    <h2>⚙️ Robot Configuration</h2>
+                    <h2>⚙️ Administration</h2>
 
-                    <div class="setting-group">
-                        <label>Detection Range</label>
-                        <input type="range" id="minRangeSlider" min="0.1" max="5.0" step="0.1" value="0.5" />
-                        <span class="val" id="minRangeVal">0.5</span>
-                        <span style="color:#666;">to</span>
-                        <input type="range" id="maxRangeSlider" min="0.5" max="10.0" step="0.5" value="5.0" />
-                        <span class="val" id="maxRangeVal">5.0</span>
-                        <button id="applyRangeBtn">Apply</button>
+                    <!-- Tabs (added Charts) -->
+                    <div class="admin-tabs">
+                        <button class="active" data-tab="config">Configuration</button>
+                        <button data-tab="artifacts">Artifact Management</button>
+                        <button data-tab="alarms">🔔 Alarm Log</button>
+                        <button data-tab="movement">📍 Movement Log</button>
+                        <button data-tab="charts">📊 Charts</button>
                     </div>
 
-                    <div class="setting-group">
-                        <label>Movement Speed</label>
-                        <input type="range" id="speedSlider" min="0.1" max="1.0" step="0.05" value="0.5" />
-                        <span class="val" id="speedVal">0.5</span>
-                        <button id="applySpeedBtn">Apply</button>
-                    </div>
-
-                    <!-- Manual Control Section -->
-                    <div class="setting-group control-group manual-control">
-                        <label style="width: 100%;">🕹️ Manual Control</label>
-                        <div class="btn-grid">
-                            <button class="dir-btn" data-dir="forward">⬆️</button>
-                            <button class="dir-btn" data-dir="left">⬅️</button>
-                            <button class="dir-btn" data-dir="stop" style="background: rgba(233, 69, 96, 0.2); border-color: #e94560; color: #e94560;">⏹️</button>
-                            <button class="dir-btn" data-dir="right">➡️</button>
-                            <button class="dir-btn" data-dir="backward">⬇️</button>
-                            <button class="dir-btn" data-dir="rotate_left">↺</button>
-                            <button class="dir-btn" data-dir="rotate_right">↻</button>
+                    <!-- Configuration Tab -->
+                    <div class="admin-tab-content active" id="tab-config">
+                        <div class="config-refresh-wrap">
+                            <span class="config-status" id="configLoadStatus">✅ Config loaded</span>
+                            <button id="refreshConfigBtn">🔄 Refresh Config</button>
                         </div>
-                        <div style="width: 100%; text-align: center; font-size: 0.8rem; color: #888; margin-top: 5px;">
-                            <span id="manualStatus">Tap a direction to send command</span>
+
+                        <div class="setting-group">
+                            <label>Detection Range</label>
+                            <input type="range" id="minRangeSlider" min="0.1" max="5.0" step="0.1" value="0.5" />
+                            <span class="val" id="minRangeVal">0.5</span>
+                            <span style="color:#666;">to</span>
+                            <input type="range" id="maxRangeSlider" min="0.5" max="10.0" step="0.5" value="5.0" />
+                            <span class="val" id="maxRangeVal">5.0</span>
+                            <button class="update-btn" id="applyRangeBtn">Apply</button>
+                            <div class="description">Minimum and maximum detection distance (m)</div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Detection Angle</label>
+                            <input type="number" id="angleMinInput" min="-180" max="180" step="1" value="-90" style="flex:0 0 80px;" />
+                            <span style="color:#666;">° to</span>
+                            <input type="number" id="angleMaxInput" min="-180" max="180" step="1" value="90" style="flex:0 0 80px;" />
+                            <span style="color:#666;">°</span>
+                            <button class="update-btn" id="applyAngleBtn">Apply</button>
+                            <div class="description">Left and right angle boundaries (degrees)</div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Sensitivity (eps)</label>
+                            <input type="range" id="sensitivitySlider" min="0.05" max="0.5" step="0.01" value="0.15" />
+                            <span class="val" id="sensitivityVal">0.15</span>
+                            <button class="update-btn" id="applySensitivityBtn">Apply</button>
+                            <div class="description">DBSCAN clustering distance threshold</div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Min Samples</label>
+                            <input type="number" id="minSamplesInput" min="3" max="20" step="1" value="8" style="flex:0 0 80px;" />
+                            <button class="update-btn" id="applyMinSamplesBtn">Apply</button>
+                            <div class="description">Minimum points to form a cluster</div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Movement Threshold</label>
+                            <input type="range" id="movementThresholdSlider" min="0.05" max="0.5" step="0.01" value="0.2" />
+                            <span class="val" id="movementThresholdVal">0.20</span>
+                            <button class="update-btn" id="applyMovementThresholdBtn">Apply</button>
+                            <div class="description">Distance an object must move to be considered moving (m)</div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Movement Speed</label>
+                            <input type="range" id="speedSlider" min="0.1" max="1.0" step="0.05" value="0.5" />
+                            <span class="val" id="speedVal">0.5</span>
+                            <button class="update-btn" id="applySpeedBtn">Apply</button>
+                            <div class="description">Robot max speed (m/s)</div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Arrival Distance</label>
+                            <input type="range" id="arrivalDistanceSlider" min="0.2" max="2.0" step="0.1" value="1.0" />
+                            <span class="val" id="arrivalDistanceVal">1.0</span>
+                            <button class="update-btn" id="applyArrivalDistanceBtn">Apply</button>
+                            <div class="description">Stop distance from crowd (m)</div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Static Frames</label>
+                            <input type="number" id="maxStaticFramesInput" min="1" max="10" step="1" value="3" style="flex:0 0 80px;" />
+                            <button class="update-btn" id="applyMaxStaticFramesBtn">Apply</button>
+                            <div class="description">Number of frames before object is considered static</div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Min Detections</label>
+                            <input type="number" id="minDetectionsInput" min="1" max="10" step="1" value="3" style="flex:0 0 80px;" />
+                            <button class="update-btn" id="applyMinDetectionsBtn">Apply</button>
+                            <div class="description">Consecutive detections required to confirm a person</div>
+                        </div>
+
+                        <div class="save-all-wrap">
+                            <button id="saveAllConfigBtn">💾 Save All Config</button>
                         </div>
                     </div>
 
-                    <div class="setting-group">
-                        <label>Robot State</label>
-                        <span style="color:#4ecdc4;" id="adminStateLabel">Idle</span>
-                        <button id="adminResetBtn">🔄 Reset Robot</button>
+                    <!-- Artifact Management Tab -->
+                    <div class="admin-tab-content" id="tab-artifacts">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                            <span style="color:#aaa;">Manage artifact database (Google Sheets)</span>
+                            <button id="newArtifactBtn" style="background:rgba(78,205,196,0.15);border:1px solid #4ecdc4;color:#4ecdc4;padding:6px 16px;border-radius:20px;cursor:pointer;">➕ Add New</button>
+                        </div>
+
+                        <div class="artifact-form" id="artifactForm">
+                            <h4 id="formTitle" style="color:#e94560;">Add Artifact</h4>
+                            <div class="form-row">
+                                <input type="text" id="af_id" placeholder="ID (e.g., artifak-1)" />
+                                <input type="text" id="af_name" placeholder="Name (English)" />
+                            </div>
+                            <div class="form-row">
+                                <input type="text" id="af_name_ms" placeholder="Name (Malay)" />
+                                <input type="text" id="af_name_fr" placeholder="Name (French)" />
+                            </div>
+                            <div class="form-row">
+                                <input type="text" id="af_category" placeholder="Category" />
+                                <input type="text" id="af_category_ms" placeholder="Category (Malay)" />
+                                <input type="text" id="af_category_fr" placeholder="Category (French)" />
+                            </div>
+                            <div class="form-row">
+                                <input type="text" id="af_year" placeholder="Year" />
+                                <input type="text" id="af_year_ms" placeholder="Year (Malay)" />
+                                <input type="text" id="af_year_fr" placeholder="Year (French)" />
+                            </div>
+                            <div class="form-row">
+                                <input type="text" id="af_origin" placeholder="Origin" />
+                                <input type="text" id="af_origin_ms" placeholder="Origin (Malay)" />
+                                <input type="text" id="af_origin_fr" placeholder="Origin (French)" />
+                            </div>
+                            <div class="form-row">
+                                <input type="text" id="af_material" placeholder="Material" />
+                                <input type="text" id="af_material_ms" placeholder="Material (Malay)" />
+                                <input type="text" id="af_material_fr" placeholder="Material (French)" />
+                            </div>
+                            <div class="form-row">
+                                <input type="text" id="af_emoji" placeholder="Emoji" />
+                                <input type="text" id="af_image_url" placeholder="Image URL (optional)" />
+                            </div>
+                            <div class="form-row">
+                                <textarea id="af_description" placeholder="Description (English)"></textarea>
+                            </div>
+                            <div class="form-row">
+                                <textarea id="af_description_ms" placeholder="Description (Malay)"></textarea>
+                            </div>
+                            <div class="form-row">
+                                <textarea id="af_description_fr" placeholder="Description (French)"></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button id="formCancelBtn">Cancel</button>
+                                <button id="formSaveBtn">💾 Save</button>
+                            </div>
+                        </div>
+
+                        <div class="artifact-table-wrap">
+                            <table class="artifact-table" id="artifactTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Year</th>
+                                        <th>Origin</th>
+                                        <th>Material</th>
+                                        <th>Scans</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="artifactTableBody">
+                                    <tr><td colspan="8" style="text-align:center; color:#666;">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
-                    <button id="adminLogoutBtn" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#888;padding:8px 20px;border-radius:20px;cursor:pointer;align-self:flex-start;">🚪 Logout</button>
+                    <!-- Alarm Log Tab -->
+                    <div class="admin-tab-content" id="tab-alarms">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:5px;">
+                            <span style="color:#aaa;">Temperature & Humidity Alerts</span>
+                            <span class="log-refresh" id="alarmRefresh">Auto-refresh: 15s</span>
+                        </div>
+                        <div class="log-table-wrap">
+                            <table class="log-table" id="alarmTable">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Type</th>
+                                        <th>Message</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alarmTableBody">
+                                    <tr><td colspan="5" style="text-align:center; color:#666;">Loading alarms...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Movement Log Tab -->
+                    <div class="admin-tab-content" id="tab-movement">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:5px;">
+                            <span style="color:#aaa;">Robot Position History</span>
+                            <span class="log-refresh" id="movementRefresh">Auto-refresh: 15s</span>
+                        </div>
+                        <div class="log-table-wrap">
+                            <table class="log-table" id="movementTable">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Current X</th>
+                                        <th>Current Y</th>
+                                        <th>Target X</th>
+                                        <th>Target Y</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="movementTableBody">
+                                    <tr><td colspan="5" style="text-align:center; color:#666;">Loading movement logs...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Charts Tab -->
+                    <div class="admin-tab-content" id="tab-charts">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:5px;">
+                            <span style="color:#aaa;">Historical Data & Artifact Scans</span>
+                            <span class="log-refresh">Auto-refresh: 15s</span>
+                        </div>
+                        <div class="chart-grid">
+                            <div class="chart-container">
+                                <canvas id="historyChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="artifactScanChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="adminLogoutBtn" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#888;padding:8px 20px;border-radius:20px;cursor:pointer;align-self:flex-start;margin-top:10px;">🚪 Logout</button>
                 </div>
-
             </div>
         </div>
 
@@ -948,11 +1574,10 @@
     </div>
 
     <!-- ==========================================================
-    JAVASCRIPT – Web Speech API Only (No external TTS libraries)
+    JAVASCRIPT
     ========================================================== -->
     <script>
         (function() {
-
             'use strict';
 
             // ==========================================
@@ -967,7 +1592,8 @@
                 topicState: 'museum/state',
                 topicRobotPos: 'museum/robot_position',
                 topicManualControl: 'museum/manual_control',
-                adminPassword: '1234'
+                adminPassword: '1234',
+                sheetApiUrl: 'https://script.google.com/macros/s/AKfycby7OkKQIk3hkHkgvhtU8ObA6PY2RkxjjUvJOFeefNZcQeHYR1UKx1udADH83kOTEHYI/exec'
             };
 
             // ==========================================
@@ -981,6 +1607,7 @@
             let demoInterval = null;
             let mqttClient = null;
             let mqttConnected = false;
+            let adminLoggedIn = false;
 
             // ==========================================
             // DOM REFS
@@ -992,51 +1619,1133 @@
                 admin: document.getElementById('admin-section'),
             };
 
-            const stateLabel = document.getElementById('stateLabel');
-            const tempDisplay = document.getElementById('tempDisplay');
-            const humidDisplay = document.getElementById('humidDisplay');
-            const crowdCountDisplay = document.getElementById('crowdCountDisplay');
-            const sensorAlert = document.getElementById('sensorAlert');
-            const coordDisplay = document.getElementById('coordDisplay');
-            const progressFill = document.getElementById('progressFill');
-            const etaDisplay = document.getElementById('etaDisplay');
-            const greetingBox = document.getElementById('greetingBox');
-            const artifactDisplay = document.getElementById('artifactDisplay');
-            const artifactImage = document.getElementById('artifactImage');
-            const artifactName = document.getElementById('artifactName');
-            const artifactMeta = document.getElementById('artifactMeta');
-            const artifactDesc = document.getElementById('artifactDesc');
-            const langIndicator = document.getElementById('langIndicator');
-            const langButtons = document.querySelectorAll('.lang-buttons button');
-            const replayBtn = document.getElementById('replayBtn');
-            const doneBtn = document.getElementById('doneBtn');
-            const demoModeBtn = document.getElementById('demoModeBtn');
-            const demoStatus = document.getElementById('demoStatus');
-            const adminToggleBtn = document.getElementById('adminToggleBtn');
-            const adminLogin = document.getElementById('adminLogin');
-            const adminPanel = document.getElementById('adminPanel');
-            const adminPassword = document.getElementById('adminPassword');
-            const adminLoginBtn = document.getElementById('adminLoginBtn');
-            const adminLoginError = document.getElementById('adminLoginError');
-            const adminLogoutBtn = document.getElementById('adminLogoutBtn');
-            const adminStateLabel = document.getElementById('adminStateLabel');
-            const minRangeSlider = document.getElementById('minRangeSlider');
-            const maxRangeSlider = document.getElementById('maxRangeSlider');
-            const minRangeVal = document.getElementById('minRangeVal');
-            const maxRangeVal = document.getElementById('maxRangeVal');
-            const speedSlider = document.getElementById('speedSlider');
-            const speedVal = document.getElementById('speedVal');
-            const applyRangeBtn = document.getElementById('applyRangeBtn');
-            const applySpeedBtn = document.getElementById('applySpeedBtn');
-            const adminResetBtn = document.getElementById('adminResetBtn');
-            const manualStatus = document.getElementById('manualStatus');
-            const mqttDot = document.getElementById('mqttDot');
-            const mqttLabel = document.getElementById('mqttLabel');
+            const getEl = (id) => document.getElementById(id);
+
+            const stateLabel = getEl('stateLabel');
+            const adminStateLabel = getEl('adminStateLabel');
+            const tempDisplay = getEl('tempDisplay');
+            const humidDisplay = getEl('humidDisplay');
+            const crowdCountDisplay = getEl('crowdCountDisplay');
+            const crowdLocationDisplay = getEl('crowdLocationDisplay');
+            const sensorAlert = getEl('sensorAlert');
+            const coordDisplay = getEl('coordDisplay');
+            const progressFill = getEl('progressFill');
+            const etaDisplay = getEl('etaDisplay');
+            const greetingBox = getEl('greetingBox');
+            const artifactDisplay = getEl('artifactDisplay');
+            const artifactImage = getEl('artifactImage');
+            const artifactName = getEl('artifactName');
+            const artifactMeta = getEl('artifactMeta');
+            const artifactDesc = getEl('artifactDesc');
+            const langIndicator = getEl('langIndicator');
+            const replayBtn = getEl('replayBtn');
+            const doneBtn = getEl('doneBtn');
+            const demoModeBtn = getEl('demoModeBtn');
+            const demoStatus = getEl('demoStatus');
+            const adminToggleBtn = getEl('adminToggleBtn');
+            const adminLogin = getEl('adminLogin');
+            const adminPanel = getEl('adminPanel');
+            const adminPassword = getEl('adminPassword');
+            const adminLoginBtn = getEl('adminLoginBtn');
+            const adminLoginError = getEl('adminLoginError');
+            const adminLogoutBtn = getEl('adminLogoutBtn');
+            const manualStatus = getEl('manualStatus');
+            const mqttDot = getEl('mqttDot');
+            const mqttLabel = getEl('mqttLabel');
+            const resetRobotBtn = getEl('resetRobotBtn');
+            const configLoadStatus = getEl('configLoadStatus');
+            const refreshConfigBtn = getEl('refreshConfigBtn');
+
+            // Config controls
+            const minRangeSlider = getEl('minRangeSlider');
+            const maxRangeSlider = getEl('maxRangeSlider');
+            const minRangeVal = getEl('minRangeVal');
+            const maxRangeVal = getEl('maxRangeVal');
+            const applyRangeBtn = getEl('applyRangeBtn');
+            const angleMinInput = getEl('angleMinInput');
+            const angleMaxInput = getEl('angleMaxInput');
+            const applyAngleBtn = getEl('applyAngleBtn');
+            const sensitivitySlider = getEl('sensitivitySlider');
+            const sensitivityVal = getEl('sensitivityVal');
+            const applySensitivityBtn = getEl('applySensitivityBtn');
+            const minSamplesInput = getEl('minSamplesInput');
+            const applyMinSamplesBtn = getEl('applyMinSamplesBtn');
+            const movementThresholdSlider = getEl('movementThresholdSlider');
+            const movementThresholdVal = getEl('movementThresholdVal');
+            const applyMovementThresholdBtn = getEl('applyMovementThresholdBtn');
+            const speedSlider = getEl('speedSlider');
+            const speedVal = getEl('speedVal');
+            const applySpeedBtn = getEl('applySpeedBtn');
+            const arrivalDistanceSlider = getEl('arrivalDistanceSlider');
+            const arrivalDistanceVal = getEl('arrivalDistanceVal');
+            const applyArrivalDistanceBtn = getEl('applyArrivalDistanceBtn');
+            const maxStaticFramesInput = getEl('maxStaticFramesInput');
+            const applyMaxStaticFramesBtn = getEl('applyMaxStaticFramesBtn');
+            const minDetectionsInput = getEl('minDetectionsInput');
+            const applyMinDetectionsBtn = getEl('applyMinDetectionsBtn');
+            const saveAllConfigBtn = getEl('saveAllConfigBtn');
+
+            // Artifact management refs
+            const artifactTableBody = getEl('artifactTableBody');
+            const artifactForm = getEl('artifactForm');
+            const formTitle = getEl('formTitle');
+            const af_id = getEl('af_id');
+            const af_name = getEl('af_name');
+            const af_name_ms = getEl('af_name_ms');
+            const af_name_fr = getEl('af_name_fr');
+            const af_category = getEl('af_category');
+            const af_category_ms = getEl('af_category_ms');
+            const af_category_fr = getEl('af_category_fr');
+            const af_year = getEl('af_year');
+            const af_year_ms = getEl('af_year_ms');
+            const af_year_fr = getEl('af_year_fr');
+            const af_origin = getEl('af_origin');
+            const af_origin_ms = getEl('af_origin_ms');
+            const af_origin_fr = getEl('af_origin_fr');
+            const af_material = getEl('af_material');
+            const af_material_ms = getEl('af_material_ms');
+            const af_material_fr = getEl('af_material_fr');
+            const af_emoji = getEl('af_emoji');
+            const af_image_url = getEl('af_image_url');
+            const af_description = getEl('af_description');
+            const af_description_ms = getEl('af_description_ms');
+            const af_description_fr = getEl('af_description_fr');
+            const formCancelBtn = getEl('formCancelBtn');
+            const formSaveBtn = getEl('formSaveBtn');
+            const newArtifactBtn = getEl('newArtifactBtn');
+
+            // Logs refs
+            const alarmTableBody = getEl('alarmTableBody');
+            const movementTableBody = getEl('movementTableBody');
+
+            // Admin tabs
+            const tabButtons = document.querySelectorAll('.admin-tabs button');
+            const tabContents = {
+                config: getEl('tab-config'),
+                artifacts: getEl('tab-artifacts'),
+                alarms: getEl('tab-alarms'),
+                movement: getEl('tab-movement'),
+                charts: getEl('tab-charts'),
+            };
+
+            let langButtons = [];
 
             // ==========================================
-            // DEMO MODE
+            // CHARTS INIT
             // ==========================================
-            const demoArtifacts = [{
+            const ctx1 = document.getElementById('historyChart').getContext('2d');
+            const historyChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Temperature (°C)',
+                        data: [],
+                        borderColor: '#ff6b6b',
+                        backgroundColor: 'rgba(255,107,107,0.1)',
+                        tension: 0.3,
+                        pointRadius: 2,
+                        fill: true,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Humidity (%)',
+                        data: [],
+                        borderColor: '#4ecdc4',
+                        backgroundColor: 'rgba(78,205,196,0.1)',
+                        tension: 0.3,
+                        pointRadius: 2,
+                        fill: true,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { labels: { color: '#eee' } } },
+                    scales: {
+                        x: { ticks: { color: '#888', maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { type: 'linear', position: 'left', ticks: { color: '#ff6b6b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y1: { type: 'linear', position: 'right', ticks: { color: '#4ecdc4' }, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('artifactScanChart').getContext('2d');
+            const scanChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Scans',
+                        data: [],
+                        backgroundColor: '#e94560',
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#eee' } } },
+                    scales: {
+                        x: { ticks: { color: '#888', maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#888' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+
+            // ==========================================
+            // FETCH FUNCTIONS
+            // ==========================================
+            async function fetchSensorHistory() {
+                try {
+                    const res = await fetch(CONFIG.sheetApiUrl + '?action=getSensorData&_=' + Date.now());
+                    const data = await res.json();
+                    if (data.error) { console.error('Sensor history error:', data.error); return; }
+                    const rows = data.data || [];
+                    if (rows.length === 0) return;
+                    const labels = rows.map(r => { const d = new Date(r[0]); return d.toLocaleTimeString(); });
+                    const temps = rows.map(r => parseFloat(r[1]) || 0);
+                    const hums = rows.map(r => parseFloat(r[2]) || 0);
+                    historyChart.data.labels = labels;
+                    historyChart.data.datasets[0].data = temps;
+                    historyChart.data.datasets[1].data = hums;
+                    historyChart.update('none');
+                    const last = rows[rows.length - 1];
+                    if (last) {
+                        if (tempDisplay) tempDisplay.textContent = parseFloat(last[1]).toFixed(1) + '°C';
+                        if (humidDisplay) humidDisplay.textContent = parseFloat(last[2]).toFixed(1) + '%';
+                    }
+                } catch (e) { console.error('Fetch sensor history failed:', e); }
+            }
+
+            async function fetchArtifactScans() {
+                try {
+                    const res = await fetch(CONFIG.sheetApiUrl + '?action=getArtifactScans&_=' + Date.now());
+                    const data = await res.json();
+                    if (data.error) { console.error('Scan data error:', data.error); return; }
+                    const scans = data.scans || [];
+                    if (scans.length === 0) {
+                        scanChart.data.labels = ['No data'];
+                        scanChart.data.datasets[0].data = [0];
+                        scanChart.update('none');
+                        return;
+                    }
+                    const labels = scans.map(s => s.name || s.id);
+                    const counts = scans.map(s => parseInt(s.count) || 0);
+                    scanChart.data.labels = labels;
+                    scanChart.data.datasets[0].data = counts;
+                    scanChart.update('none');
+                } catch (e) { console.error('Fetch scan data failed:', e); }
+            }
+
+            // ==========================================
+            // LOAD ALARMS
+            // ==========================================
+            async function loadAlarms() {
+                try {
+                    if (!alarmTableBody) return;
+                    const res = await fetch(CONFIG.sheetApiUrl + '?action=getAlarms&_=' + Date.now());
+                    const data = await res.json();
+                    if (data.error) {
+                        alarmTableBody.innerHTML =
+                            `<tr><td colspan="5" style="color:#e94560;">Error: ${data.error}</td></tr>`;
+                        return;
+                    }
+                    const alarms = data.alarms || [];
+                    if (alarms.length === 0) {
+                        alarmTableBody.innerHTML = `<tr><td colspan="5" style="color:#666;">No alarms recorded.</td></tr>`;
+                        return;
+                    }
+                    let html = '';
+                    alarms.forEach((a, idx) => {
+                        const acknowledged = a[3] === true || a[3] === 'TRUE' || a[3] === 'true';
+                        const statusClass = a[1] === 'Temperature' ? 'danger' : 'warning';
+                        html += `<tr>
+                            <td>${a[0]}</td>
+                            <td><span class="status-badge ${statusClass}">${a[1]}</span></td>
+                            <td>${a[2]}</td>
+                            <td>${acknowledged ? '✅ Acknowledged' : '⚠️ Pending'}</td>
+                            <td>
+                                ${!acknowledged ? `<button class="ack-btn" data-index="${idx}">Acknowledge</button>` : `<span class="ack-btn acknowledged">Done</span>`}
+                            </td>
+                        </tr>`;
+                    });
+                    alarmTableBody.innerHTML = html;
+                    document.querySelectorAll('#alarmTableBody .ack-btn:not(.acknowledged)').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const index = this.dataset.index;
+                            acknowledgeAlarm(index);
+                        });
+                    });
+                } catch (e) {
+                    if (alarmTableBody) alarmTableBody.innerHTML =
+                        `<tr><td colspan="5" style="color:#e94560;">Error loading alarms.</td></tr>`;
+                }
+            }
+
+            async function acknowledgeAlarm(index) {
+                try {
+                    const res = await fetch(CONFIG.sheetApiUrl +
+                        `?action=acknowledgeAlarm&id=${encodeURIComponent(index)}&_=${Date.now()}`, { method: 'GET' });
+                    const data = await res.json();
+                    if (data.error) { alert('Acknowledge error: ' + data.error); return; }
+                    loadAlarms();
+                } catch (e) { console.error('Acknowledge failed:', e); }
+            }
+
+            // ==========================================
+            // LOAD MOVEMENT LOGS
+            // ==========================================
+            async function loadMovementLogs() {
+                try {
+                    if (!movementTableBody) return;
+                    const res = await fetch(CONFIG.sheetApiUrl + '?action=getPositionLogs&_=' + Date.now());
+                    const data = await res.json();
+                    if (data.error) {
+                        movementTableBody.innerHTML =
+                            `<tr><td colspan="5" style="color:#e94560;">Error: ${data.error}</td></tr>`;
+                        return;
+                    }
+                    const logs = data.logs || [];
+                    if (logs.length === 0) {
+                        movementTableBody.innerHTML =
+                        `<tr><td colspan="5" style="color:#666;">No movement logs available.</td></tr>`;
+                        return;
+                    }
+                    let html = '';
+                    logs.slice(-50).reverse().forEach(log => {
+                        html += `<tr>
+                            <td>${log[0]}</td>
+                            <td>${parseFloat(log[1]).toFixed(2)}</td>
+                            <td>${parseFloat(log[2]).toFixed(2)}</td>
+                            <td>${parseFloat(log[3]).toFixed(2)}</td>
+                            <td>${parseFloat(log[4]).toFixed(2)}</td>
+                        </tr>`;
+                    });
+                    movementTableBody.innerHTML = html;
+                } catch (e) {
+                    if (movementTableBody) movementTableBody.innerHTML =
+                        `<tr><td colspan="5" style="color:#e94560;">Error loading movement logs.</td></tr>`;
+                }
+            }
+
+            // ==========================================
+            // LOAD CONFIG
+            // ==========================================
+            async function loadConfigFromSheets(retries = 3) {
+                try {
+                    if (configLoadStatus) configLoadStatus.textContent = '🔄 Loading config...';
+                    const url = CONFIG.sheetApiUrl + '?action=getConfig&_=' + Date.now();
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.error);
+                    const config = data.config || {};
+
+                    if (minRangeSlider && minRangeVal && config.min_range !== undefined) {
+                        const val = parseFloat(config.min_range);
+                        minRangeSlider.value = val;
+                        minRangeVal.textContent = val.toFixed(1);
+                    }
+                    if (maxRangeSlider && maxRangeVal && config.max_range !== undefined) {
+                        const val = parseFloat(config.max_range);
+                        maxRangeSlider.value = val;
+                        maxRangeVal.textContent = val.toFixed(1);
+                    }
+                    if (angleMinInput && config.angle_min !== undefined) angleMinInput.value = config.angle_min;
+                    if (angleMaxInput && config.angle_max !== undefined) angleMaxInput.value = config.angle_max;
+                    if (sensitivitySlider && sensitivityVal && config.sensitivity !== undefined) {
+                        const val = parseFloat(config.sensitivity);
+                        sensitivitySlider.value = val;
+                        sensitivityVal.textContent = val.toFixed(2);
+                    }
+                    if (minSamplesInput && config.min_samples !== undefined) minSamplesInput.value = parseInt(config
+                        .min_samples);
+                    if (movementThresholdSlider && movementThresholdVal && config.movement_threshold !== undefined) {
+                        const val = parseFloat(config.movement_threshold);
+                        movementThresholdSlider.value = val;
+                        movementThresholdVal.textContent = val.toFixed(2);
+                    }
+                    if (speedSlider && speedVal && config.max_speed !== undefined) {
+                        const val = parseFloat(config.max_speed);
+                        speedSlider.value = val;
+                        speedVal.textContent = val.toFixed(2);
+                    }
+                    if (arrivalDistanceSlider && arrivalDistanceVal && config.arrival_distance !== undefined) {
+                        const val = parseFloat(config.arrival_distance);
+                        arrivalDistanceSlider.value = val;
+                        arrivalDistanceVal.textContent = val.toFixed(1);
+                    }
+                    if (maxStaticFramesInput && config.max_static_frames !== undefined) maxStaticFramesInput.value =
+                        parseInt(config.max_static_frames);
+                    if (minDetectionsInput && config.min_detections !== undefined) minDetectionsInput.value = parseInt(
+                        config.min_detections);
+
+                    if (configLoadStatus) configLoadStatus.textContent = '✅ Config loaded';
+                    console.log('✅ Config loaded from Google Sheets');
+                } catch (e) {
+                    console.warn('Failed to load config:', e);
+                    if (configLoadStatus) configLoadStatus.textContent = '⚠️ Config load failed';
+                    if (retries > 0) {
+                        setTimeout(() => loadConfigFromSheets(retries - 1), 2000);
+                        if (configLoadStatus) configLoadStatus.textContent = '🔄 Retrying...';
+                    }
+                }
+            }
+
+            // ==========================================
+            // UPDATE CONFIG
+            // ==========================================
+            async function updateConfigInSheets(param, value) {
+                try {
+                    const formData = new URLSearchParams();
+                    formData.append('action', 'updateConfig');
+                    formData.append('param', param);
+                    formData.append('value', value);
+                    const response = await fetch(CONFIG.sheetApiUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                    });
+                    const data = await response.json();
+                    if (data.error) {
+                        console.warn('Config update error:', data.error);
+                    } else {
+                        console.log(`✅ Config ${param} updated to ${value} in Google Sheets`);
+                    }
+                } catch (e) {
+                    console.warn('Failed to update config:', e);
+                }
+            }
+
+            // ==========================================
+            // SAVE ALL CONFIG
+            // ==========================================
+            async function saveAllConfig() {
+                const config = {
+                    min_range: parseFloat(minRangeSlider ? minRangeSlider.value : 0.5),
+                    max_range: parseFloat(maxRangeSlider ? maxRangeSlider.value : 5.0),
+                    angle_min: parseInt(angleMinInput ? angleMinInput.value : -90),
+                    angle_max: parseInt(angleMaxInput ? angleMaxInput.value : 90),
+                    sensitivity: parseFloat(sensitivitySlider ? sensitivitySlider.value : 0.15),
+                    min_samples: parseInt(minSamplesInput ? minSamplesInput.value : 8),
+                    movement_threshold: parseFloat(movementThresholdSlider ? movementThresholdSlider.value : 0.2),
+                    max_speed: parseFloat(speedSlider ? speedSlider.value : 0.5),
+                    arrival_distance: parseFloat(arrivalDistanceSlider ? arrivalDistanceSlider.value : 1.0),
+                    max_static_frames: parseInt(maxStaticFramesInput ? maxStaticFramesInput.value : 3),
+                    min_detections: parseInt(minDetectionsInput ? minDetectionsInput.value : 3)
+                };
+                try {
+                    const formData = new URLSearchParams();
+                    formData.append('action', 'updateConfigBatch');
+                    formData.append('config', JSON.stringify(config));
+                    const response = await fetch(CONFIG.sheetApiUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                    });
+                    const data = await response.json();
+                    if (data.error) {
+                        alert('Save error: ' + data.error);
+                    } else {
+                        alert('✅ All configuration saved to Google Sheets');
+                        loadConfigFromSheets();
+                    }
+                } catch (e) {
+                    alert('Save failed: ' + e);
+                }
+            }
+
+            // ==========================================
+            // ARTIFACT MANAGEMENT
+            // ==========================================
+            let editingArtifactId = null;
+
+            async function loadArtifactTable() {
+                try {
+                    if (!artifactTableBody) return;
+                    const res = await fetch(CONFIG.sheetApiUrl + '?action=getArtifacts&_=' + Date.now());
+                    const data = await res.json();
+                    if (data.error) {
+                        artifactTableBody.innerHTML =
+                            `<tr><td colspan="8" style="color:#e94560;">Error: ${data.error}</td></tr>`;
+                        return;
+                    }
+                    const artifacts = data.artifacts || [];
+                    if (artifacts.length === 0) {
+                        artifactTableBody.innerHTML = `<tr><td colspan="8" style="color:#666;">No artifacts found.</td></tr>`;
+                        return;
+                    }
+                    let html = '';
+                    artifacts.forEach(a => {
+                        html += `<tr>
+                            <td>${a.id}</td>
+                            <td>${a.name}</td>
+                            <td>${a.category || ''}</td>
+                            <td>${a.year || ''}</td>
+                            <td>${a.origin || ''}</td>
+                            <td>${a.material || ''}</td>
+                            <td>${a.scan_count || 0}</td>
+                            <td class="actions">
+                                <button class="edit-artifact" data-id="${a.id}">✏️</button>
+                                <button class="delete-artifact" data-id="${a.id}">🗑️</button>
+                            </td>
+                        </tr>`;
+                    });
+                    artifactTableBody.innerHTML = html;
+                    document.querySelectorAll('.edit-artifact').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            editArtifact(id);
+                        });
+                    });
+                    document.querySelectorAll('.delete-artifact').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            if (confirm(`Delete artifact ${id}?`)) {
+                                deleteArtifact(id);
+                            }
+                        });
+                    });
+                } catch (e) {
+                    if (artifactTableBody) artifactTableBody.innerHTML =
+                        `<tr><td colspan="8" style="color:#e94560;">Error loading artifacts.</td></tr>`;
+                }
+            }
+
+            function editArtifact(id) {
+                fetch(CONFIG.sheetApiUrl + `?action=getArtifact&id=${encodeURIComponent(id)}&_=${Date.now()}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.error) { alert('Error: ' + data.error); return; }
+                        const a = data.artifact;
+                        if (!a) { alert('Artifact not found.'); return; }
+                        editingArtifactId = id;
+                        if (formTitle) formTitle.textContent = 'Edit Artifact';
+                        af_id.value = a.id || '';
+                        af_name.value = a.name || '';
+                        af_name_ms.value = a.name_ms || '';
+                        af_name_fr.value = a.name_fr || '';
+                        af_category.value = a.category || '';
+                        af_category_ms.value = a.category_ms || '';
+                        af_category_fr.value = a.category_fr || '';
+                        af_year.value = a.year || '';
+                        af_year_ms.value = a.year_ms || '';
+                        af_year_fr.value = a.year_fr || '';
+                        af_origin.value = a.origin || '';
+                        af_origin_ms.value = a.origin_ms || '';
+                        af_origin_fr.value = a.origin_fr || '';
+                        af_material.value = a.material || '';
+                        af_material_ms.value = a.material_ms || '';
+                        af_material_fr.value = a.material_fr || '';
+                        af_emoji.value = a.emoji || '';
+                        af_image_url.value = a.image_url || '';
+                        af_description.value = a.description || '';
+                        af_description_ms.value = a.description_ms || '';
+                        af_description_fr.value = a.description_fr || '';
+                        if (artifactForm) artifactForm.classList.add('active');
+                    })
+                    .catch(err => alert('Error loading artifact: ' + err));
+            }
+
+            function deleteArtifact(id) {
+                fetch(CONFIG.sheetApiUrl + `?action=deleteArtifact&id=${encodeURIComponent(id)}`, { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.error) { alert('Delete error: ' + data.error); return; }
+                        alert('Artifact deleted.');
+                        loadArtifactTable();
+                    })
+                    .catch(err => alert('Delete failed: ' + err));
+            }
+
+            function saveArtifact() {
+                const artifact = {
+                    id: af_id.value.trim(),
+                    name: af_name.value.trim(),
+                    name_ms: af_name_ms.value.trim(),
+                    name_fr: af_name_fr.value.trim(),
+                    category: af_category.value.trim(),
+                    category_ms: af_category_ms.value.trim(),
+                    category_fr: af_category_fr.value.trim(),
+                    year: af_year.value.trim(),
+                    year_ms: af_year_ms.value.trim(),
+                    year_fr: af_year_fr.value.trim(),
+                    origin: af_origin.value.trim(),
+                    origin_ms: af_origin_ms.value.trim(),
+                    origin_fr: af_origin_fr.value.trim(),
+                    material: af_material.value.trim(),
+                    material_ms: af_material_ms.value.trim(),
+                    material_fr: af_material_fr.value.trim(),
+                    emoji: af_emoji.value.trim(),
+                    image_url: af_image_url.value.trim(),
+                    description: af_description.value.trim(),
+                    description_ms: af_description_ms.value.trim(),
+                    description_fr: af_description_fr.value.trim()
+                };
+                if (!artifact.id) { alert('ID is required.'); return; }
+                if (!artifact.name) { alert('Name is required.'); return; }
+                const formData = new URLSearchParams();
+                formData.append('action', 'updateArtifact');
+                formData.append('data', JSON.stringify(artifact));
+                fetch(CONFIG.sheetApiUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.error) { alert('Save error: ' + data.error); return; }
+                        alert('Artifact saved.');
+                        if (artifactForm) artifactForm.classList.remove('active');
+                        editingArtifactId = null;
+                        loadArtifactTable();
+                    })
+                    .catch(err => alert('Save failed: ' + err));
+            }
+
+            if (newArtifactBtn) {
+                newArtifactBtn.addEventListener('click', function() {
+                    editingArtifactId = null;
+                    if (formTitle) formTitle.textContent = 'Add Artifact';
+                    ['af_id', 'af_name', 'af_name_ms', 'af_name_fr', 'af_category', 'af_category_ms', 'af_category_fr',
+                        'af_year', 'af_year_ms', 'af_year_fr', 'af_origin', 'af_origin_ms', 'af_origin_fr',
+                        'af_material', 'af_material_ms', 'af_material_fr', 'af_emoji', 'af_image_url',
+                        'af_description', 'af_description_ms', 'af_description_fr'
+                    ].forEach(id => {
+                        const el = getEl(id);
+                        if (el) el.value = '';
+                    });
+                    if (artifactForm) artifactForm.classList.add('active');
+                });
+            }
+
+            if (formCancelBtn) {
+                formCancelBtn.addEventListener('click', function() {
+                    if (artifactForm) artifactForm.classList.remove('active');
+                    editingArtifactId = null;
+                });
+            }
+
+            if (formSaveBtn) {
+                formSaveBtn.addEventListener('click', saveArtifact);
+            }
+
+            // ==========================================
+            // ADMIN TABS (with Charts resize)
+            // ==========================================
+            if (tabButtons) {
+                tabButtons.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        tabButtons.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        const tab = this.dataset.tab;
+                        Object.keys(tabContents).forEach(key => {
+                            if (tabContents[key]) tabContents[key].classList.toggle('active', key ===
+                            tab);
+                        });
+                        if (tab === 'artifacts') loadArtifactTable();
+                        else if (tab === 'alarms') loadAlarms();
+                        else if (tab === 'movement') loadMovementLogs();
+                        else if (tab === 'charts') {
+                            // Resize charts when Charts tab is activated
+                            setTimeout(() => {
+                                historyChart.resize();
+                                scanChart.resize();
+                            }, 100);
+                        }
+                    });
+                });
+            }
+
+            // ==========================================
+            // MQTT
+            // ==========================================
+            function connectMQTT() {
+                try {
+                    mqttClient = mqtt.connect(CONFIG.mqttBroker, { keepalive: 60, reconnectPeriod: 3000 });
+                    mqttClient.on('connect', function() {
+                        console.log('✅ MQTT connected');
+                        mqttConnected = true;
+                        if (mqttDot) mqttDot.className = 'dot online';
+                        if (mqttLabel) mqttLabel.textContent = 'MQTT: Connected';
+                        mqttClient.subscribe(CONFIG.topicArtifact);
+                        mqttClient.subscribe(CONFIG.topicWelcome);
+                        mqttClient.subscribe(CONFIG.topicSensor);
+                        mqttClient.subscribe(CONFIG.topicCrowd);
+                        mqttClient.subscribe(CONFIG.topicState);
+                        mqttClient.subscribe(CONFIG.topicRobotPos);
+                        console.log('📡 Subscribed to all topics');
+                    });
+                    mqttClient.on('message', function(topic, message) {
+                        const payload = message.toString();
+                        console.log(`📩 MQTT: ${topic} → ${payload}`);
+                        handleMqttMessage(topic, payload);
+                    });
+                    mqttClient.on('error', function(err) {
+                        console.error('❌ MQTT error:', err);
+                        if (mqttDot) mqttDot.className = 'dot offline';
+                        if (mqttLabel) mqttLabel.textContent = 'MQTT: Error';
+                    });
+                    mqttClient.on('close', function() {
+                        console.warn('⚠️ MQTT disconnected');
+                        mqttConnected = false;
+                        if (mqttDot) mqttDot.className = 'dot offline';
+                        if (mqttLabel) mqttLabel.textContent = 'MQTT: Disconnected';
+                    });
+                } catch (e) { console.error('❌ MQTT init error:', e); }
+            }
+
+            function handleMqttMessage(topic, payload) {
+                try {
+                    const data = JSON.parse(payload);
+                    switch (topic) {
+                        case CONFIG.topicArtifact:
+                            handleArtifact(data);
+                            break;
+                        case CONFIG.topicWelcome:
+                            handleWelcome(data);
+                            break;
+                        case CONFIG.topicSensor:
+                            handleSensor(data);
+                            break;
+                        case CONFIG.topicCrowd:
+                            handleCrowd(data);
+                            break;
+                        case CONFIG.topicState:
+                            handleState(data);
+                            break;
+                        case CONFIG.topicRobotPos:
+                            handleRobotPos(data);
+                            break;
+                        default:
+                            console.log('📬 Unhandled topic:', topic);
+                    }
+                } catch (e) { console.warn('⚠️ Could not parse MQTT payload:', payload); }
+            }
+
+            // --- Handlers ---
+            function handleArtifact(data) {
+                console.log('🏺 Artifact detected:', data);
+                currentArtifactData = data;
+                if (currentState !== 'presenting') switchSection('presenting');
+                displayArtifact(data, currentLang);
+                speakCurrentArtifact();
+                fetchArtifactScans();
+            }
+
+            function handleWelcome(data) {
+                console.log('👋 Welcome trigger:', data);
+                if (data.message && greetingBox) greetingBox.textContent = '👋 ' + data.message;
+                switchSection('presenting');
+            }
+
+            function handleSensor(data) {
+                console.log('🌡️ Sensor data:', data);
+                if (data.temperature !== undefined && tempDisplay) tempDisplay.textContent = data.temperature.toFixed(1) +
+                    '°C';
+                if (data.humidity !== undefined && humidDisplay) humidDisplay.textContent = data.humidity.toFixed(1) + '%';
+                checkSensorAlert(data);
+            }
+
+            function handleCrowd(data) {
+                if (data.target_x !== undefined) data.target_x = parseFloat(data.target_x);
+                if (data.target_y !== undefined) data.target_y = parseFloat(data.target_y);
+                if (data.progress !== undefined) data.progress = parseFloat(data.progress);
+                if (data.eta !== undefined) data.eta = parseFloat(data.eta);
+                console.log('👥 Crowd data:', data);
+                if (data.count !== undefined && crowdCountDisplay) crowdCountDisplay.textContent = data.count;
+
+                if (crowdLocationDisplay) {
+                    if (data.target_x !== undefined && data.target_y !== undefined) {
+                        crowdLocationDisplay.textContent = `(${data.target_x.toFixed(1)}, ${data.target_y.toFixed(1)})`;
+                    } else if (data.count === 0 || !data.moving) {
+                        crowdLocationDisplay.textContent = '--';
+                    }
+                }
+
+                if (data.count >= 2 && data.moving === true) {
+                    if (currentState !== 'presenting') switchSection('driving');
+                    if (data.target_x !== undefined && data.target_y !== undefined && coordDisplay)
+                        coordDisplay.textContent = `Target: (${data.target_x.toFixed(1)}, ${data.target_y.toFixed(1)})`;
+                    if (data.progress !== undefined && progressFill) progressFill.style.width = Math.min(100, data
+                        .progress * 100) + '%';
+                    if (data.eta !== undefined && etaDisplay) etaDisplay.textContent = `⏱️ ETA: ${data.eta.toFixed(1)} s`;
+                }
+                if (data.count === 0 && currentState === 'idle') {
+                    if (crowdLocationDisplay) crowdLocationDisplay.textContent = '--';
+                }
+            }
+
+            function handleState(data) {
+                console.log('📊 Robot state:', data);
+                if (data.state) {
+                    if (stateLabel) stateLabel.textContent = data.state.charAt(0).toUpperCase() + data.state.slice(1);
+                    if (adminStateLabel) adminStateLabel.textContent = data.state.charAt(0).toUpperCase() + data.state
+                        .slice(1);
+                }
+                if (currentState !== 'presenting') {
+                    if (data.state === 'idle') switchSection('welcome');
+                    else if (data.state === 'moving' || data.state === 'driving') switchSection('driving');
+                    else if (data.state === 'presenting' || data.state === 'greeting') switchSection('presenting');
+                }
+            }
+
+            function handleRobotPos(data) {
+                if (currentState === 'driving') {
+                    if (data.target_x !== undefined && data.target_y !== undefined && coordDisplay)
+                        coordDisplay.textContent = `Target: (${data.target_x.toFixed(1)}, ${data.target_y.toFixed(1)})`;
+                    if (data.progress !== undefined && progressFill) progressFill.style.width = Math.min(100, data
+                        .progress * 100) + '%';
+                    if (data.eta !== undefined && etaDisplay) etaDisplay.textContent = `⏱️ ETA: ${data.eta.toFixed(1)} s`;
+                }
+            }
+
+            // ==========================================
+            // DISPLAY ARTIFACT
+            // ==========================================
+            function displayArtifact(artifact, lang) {
+                if (!artifact) return;
+                let name = artifact.name || 'Unknown Artifact';
+                let desc = artifact.description || 'No description.';
+                let year = artifact.year || '';
+                let origin = artifact.origin || '';
+                let material = artifact.material || '';
+                let emoji = artifact.emoji || '🏺';
+                if (lang === 'ms') {
+                    desc = artifact.description_ms || desc;
+                    year = artifact.year_ms || year;
+                    origin = artifact.origin_ms || origin;
+                    material = artifact.material_ms || material;
+                    name = artifact.name_ms || name;
+                } else if (lang === 'fr') {
+                    desc = artifact.description_fr || desc;
+                    year = artifact.year_fr || year;
+                    origin = artifact.origin_fr || origin;
+                    material = artifact.material_fr || material;
+                    name = artifact.name_fr || name;
+                }
+                if (artifactName) artifactName.textContent = name;
+                if (artifactMeta) artifactMeta.textContent = [origin, year, material].filter(Boolean).join(' • ') ||
+                    'Unknown origin';
+                if (artifactDesc) artifactDesc.textContent = desc;
+                if (artifactImage) {
+                    if (artifact.image_url) artifactImage.innerHTML = `<img src="${artifact.image_url}" alt="${name}" />`;
+                    else artifactImage.textContent = emoji;
+                }
+                if (artifactDisplay) artifactDisplay.classList.add('active');
+                window.currentSpeakText = `${name}. ${desc}`;
+                window.currentLangCode = lang === 'ms' ? 'ms-MY' : (lang === 'fr' ? 'fr-FR' : 'en-US');
+                const langNames = { 'ms': 'Bahasa Melayu', 'en': 'English', 'fr': 'Français' };
+                if (langIndicator) langIndicator.textContent = `🔊 Speaking: ${langNames[lang] || 'English'}`;
+
+                langButtons = document.querySelectorAll('.lang-buttons button');
+                langButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.lang === lang) btn.classList.add('active');
+                });
+            }
+
+            // ==========================================
+            // SPEAK
+            // ==========================================
+            function speakCurrentArtifact() {
+                if (!window.currentSpeakText) return;
+                const text = window.currentSpeakText;
+                const langCode = window.currentLangCode || 'en-US';
+                if (window.speechSynthesis) window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = langCode;
+                utterance.rate = 0.9;
+                utterance.pitch = 1.0;
+                const voices = window.speechSynthesis.getVoices();
+                let voice = voices.find(v => v.lang === langCode);
+                if (!voice) {
+                    const prefix = langCode.split('-')[0];
+                    voice = voices.find(v => v.lang.startsWith(prefix));
+                }
+                if (voice) utterance.voice = voice;
+                utterance.onstart = function() { isSpeaking = true;
+                    if (langIndicator) langIndicator.textContent = `🔊 Speaking: ${text.substring(0, 40)}...`; };
+                utterance.onend = function() { isSpeaking = false;
+                    if (langIndicator) langIndicator.textContent = `✅ Finished speaking (${langCode})`; };
+                utterance.onerror = function(e) { console.error('❌ Speech error:', e);
+                    isSpeaking = false;
+                    if (langIndicator) langIndicator.textContent = `❌ Speech error`; };
+                window.speechSynthesis.speak(utterance);
+            }
+
+            // ==========================================
+            // SENSOR ALERT
+            // ==========================================
+            function checkSensorAlert(data) {
+                if (!sensorAlert) return;
+                let alertMsg = '';
+                let alertClass = '';
+                if (data.temperature !== undefined) {
+                    if (data.temperature > 30) { alertMsg = '⚠️ Temperature is too HIGH! Artifacts may be at risk.';
+                        alertClass = 'danger'; } else if (data.temperature < 15) { alertMsg =
+                            '⚠️ Temperature is too LOW! Artifacts may be at risk.';
+                        alertClass = 'danger'; }
+                }
+                if (data.humidity !== undefined) {
+                    if (data.humidity > 70) { alertMsg = alertMsg || '⚠️ Humidity is too HIGH! Artifacts may be at risk.';
+                        alertClass = 'danger'; } else if (data.humidity < 20) { alertMsg = alertMsg ||
+                            '⚠️ Humidity is too LOW! Artifacts may be at risk.';
+                        alertClass = 'danger'; }
+                }
+                if (alertMsg) {
+                    sensorAlert.textContent = alertMsg;
+                    sensorAlert.className = 'sensor-alert ' + alertClass;
+                    sensorAlert.style.display = 'block';
+                } else {
+                    sensorAlert.textContent = '✅ Temperature and humidity are within safe range.';
+                    sensorAlert.className = 'sensor-alert';
+                    sensorAlert.style.display = 'block';
+                    sensorAlert.style.background = 'rgba(78,205,196,0.10)';
+                    sensorAlert.style.border = '1px solid rgba(78,205,196,0.2)';
+                    sensorAlert.style.color = '#4ecdc4';
+                }
+            }
+
+            // ==========================================
+            // SECTION SWITCHING
+            // ==========================================
+            function switchSection(sectionName) {
+                Object.keys(sections).forEach(key => {
+                    if (sections[key]) sections[key].classList.remove('active');
+                });
+                if (sections[sectionName]) {
+                    sections[sectionName].classList.add('active');
+                    currentState = sectionName;
+                    const stateMap = { 'welcome': 'Idle', 'driving': 'Driving', 'presenting': 'Presenting',
+                        'admin': 'Admin' };
+                    if (stateLabel) stateLabel.textContent = stateMap[sectionName] || sectionName;
+                    if (adminStateLabel) adminStateLabel.textContent = stateMap[sectionName] || sectionName;
+                }
+            }
+
+            // ==========================================
+            // ADMIN LOGIN
+            // ==========================================
+            if (adminToggleBtn) {
+                adminToggleBtn.addEventListener('click', function() {
+                    if (adminLoggedIn) {
+                        switchSection('admin');
+                    } else {
+                        switchSection('admin');
+                        if (adminLogin) adminLogin.classList.remove('hidden');
+                        if (adminPanel) adminPanel.classList.remove('active');
+                    }
+                });
+            }
+
+            if (adminLoginBtn) {
+                adminLoginBtn.addEventListener('click', function() {
+                    const pass = adminPassword ? adminPassword.value.trim() : '';
+                    if (pass === CONFIG.adminPassword) {
+                        adminLoggedIn = true;
+                        if (adminLogin) adminLogin.classList.add('hidden');
+                        if (adminPanel) adminPanel.classList.add('active');
+                        if (adminLoginError) adminLoginError.textContent = '';
+                        if (adminPassword) adminPassword.value = '';
+                        loadArtifactTable();
+                        loadAlarms();
+                        loadMovementLogs();
+                    } else {
+                        if (adminLoginError) adminLoginError.textContent = '❌ Incorrect password. Try again.';
+                    }
+                });
+            }
+
+            if (adminPassword) {
+                adminPassword.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && adminLoginBtn) adminLoginBtn.click();
+                });
+            }
+
+            if (adminLogoutBtn) {
+                adminLogoutBtn.addEventListener('click', function() {
+                    adminLoggedIn = false;
+                    if (adminLogin) adminLogin.classList.remove('hidden');
+                    if (adminPanel) adminPanel.classList.remove('active');
+                    if (adminLoginError) adminLoginError.textContent = '';
+                    switchSection('welcome');
+                });
+            }
+
+            // ==========================================
+            // CONFIGURATION CONTROLS
+            // ==========================================
+
+            if (minRangeSlider && minRangeVal) {
+                minRangeSlider.addEventListener('input', function() { minRangeVal.textContent = parseFloat(this.value)
+                        .toFixed(1); });
+            }
+            if (maxRangeSlider && maxRangeVal) {
+                maxRangeSlider.addEventListener('input', function() { maxRangeVal.textContent = parseFloat(this.value)
+                        .toFixed(1); });
+            }
+            if (sensitivitySlider && sensitivityVal) {
+                sensitivitySlider.addEventListener('input', function() { sensitivityVal.textContent = parseFloat(this
+                        .value).toFixed(2); });
+            }
+            if (movementThresholdSlider && movementThresholdVal) {
+                movementThresholdSlider.addEventListener('input', function() { movementThresholdVal.textContent =
+                        parseFloat(this.value).toFixed(2); });
+            }
+            if (speedSlider && speedVal) {
+                speedSlider.addEventListener('input', function() { speedVal.textContent = parseFloat(this.value)
+                        .toFixed(2); });
+            }
+            if (arrivalDistanceSlider && arrivalDistanceVal) {
+                arrivalDistanceSlider.addEventListener('input', function() { arrivalDistanceVal.textContent = parseFloat(
+                        this.value).toFixed(1); });
+            }
+
+            if (applyRangeBtn) {
+                applyRangeBtn.addEventListener('click', function() {
+                    const min = parseFloat(minRangeSlider ? minRangeSlider.value : 0.5);
+                    const max = parseFloat(maxRangeSlider ? maxRangeSlider.value : 5.0);
+                    publishMqtt('museum/admin/range', { min: min, max: max });
+                    updateConfigInSheets('min_range', min);
+                    updateConfigInSheets('max_range', max);
+                    alert(`✅ Detection range set to ${min}m - ${max}m`);
+                });
+            }
+
+            if (applyAngleBtn) {
+                applyAngleBtn.addEventListener('click', function() {
+                    const min = parseInt(angleMinInput ? angleMinInput.value : -90);
+                    const max = parseInt(angleMaxInput ? angleMaxInput.value : 90);
+                    if (min >= max) { alert('Min angle must be less than max angle.'); return; }
+                    updateConfigInSheets('angle_min', min);
+                    updateConfigInSheets('angle_max', max);
+                    alert(`✅ Detection angle set to ${min}° - ${max}°`);
+                });
+            }
+
+            if (applySensitivityBtn) {
+                applySensitivityBtn.addEventListener('click', function() {
+                    const val = parseFloat(sensitivitySlider ? sensitivitySlider.value : 0.15);
+                    updateConfigInSheets('sensitivity', val);
+                    alert(`✅ Sensitivity set to ${val}`);
+                });
+            }
+
+            if (applyMinSamplesBtn) {
+                applyMinSamplesBtn.addEventListener('click', function() {
+                    const val = parseInt(minSamplesInput ? minSamplesInput.value : 8);
+                    updateConfigInSheets('min_samples', val);
+                    alert(`✅ Min samples set to ${val}`);
+                });
+            }
+
+            if (applyMovementThresholdBtn) {
+                applyMovementThresholdBtn.addEventListener('click', function() {
+                    const val = parseFloat(movementThresholdSlider ? movementThresholdSlider.value : 0.2);
+                    updateConfigInSheets('movement_threshold', val);
+                    alert(`✅ Movement threshold set to ${val}`);
+                });
+            }
+
+            if (applySpeedBtn) {
+                applySpeedBtn.addEventListener('click', function() {
+                    const speed = parseFloat(speedSlider ? speedSlider.value : 0.5);
+                    publishMqtt('museum/admin/speed', { speed: speed });
+                    updateConfigInSheets('max_speed', speed);
+                    alert(`✅ Movement speed set to ${speed.toFixed(2)} m/s`);
+                });
+            }
+
+            if (applyArrivalDistanceBtn) {
+                applyArrivalDistanceBtn.addEventListener('click', function() {
+                    const val = parseFloat(arrivalDistanceSlider ? arrivalDistanceSlider.value : 1.0);
+                    updateConfigInSheets('arrival_distance', val);
+                    alert(`✅ Arrival distance set to ${val} m`);
+                });
+            }
+
+            if (applyMaxStaticFramesBtn) {
+                applyMaxStaticFramesBtn.addEventListener('click', function() {
+                    const val = parseInt(maxStaticFramesInput ? maxStaticFramesInput.value : 3);
+                    updateConfigInSheets('max_static_frames', val);
+                    alert(`✅ Static frames set to ${val}`);
+                });
+            }
+
+            if (applyMinDetectionsBtn) {
+                applyMinDetectionsBtn.addEventListener('click', function() {
+                    const val = parseInt(minDetectionsInput ? minDetectionsInput.value : 3);
+                    updateConfigInSheets('min_detections', val);
+                    alert(`✅ Min detections set to ${val}`);
+                });
+            }
+
+            if (saveAllConfigBtn) {
+                saveAllConfigBtn.addEventListener('click', saveAllConfig);
+            }
+
+            // ==========================================
+            // RESET ROBOT
+            // ==========================================
+            if (resetRobotBtn) {
+                resetRobotBtn.addEventListener('click', function() {
+                    if (confirm('Reset robot to idle state?')) {
+                        publishMqtt('museum/admin/reset', { action: 'reset' });
+                        switchSection('welcome');
+                        if (demoMode) stopDemo();
+                    }
+                });
+            }
+
+            // ==========================================
+            // MANUAL CONTROL
+            // ==========================================
+            const dirButtons = document.querySelectorAll('.manual-control-panel .dir-btn');
+            const dirMap = {
+                'forward': { x: 0.3, y: 0, z: 0 },
+                'backward': { x: -0.3, y: 0, z: 0 },
+                'left': { x: 0, y: 0.3, z: 0 },
+                'right': { x: 0, y: -0.3, z: 0 },
+                'rotate_left': { x: 0, y: 0, z: 0.5 },
+                'rotate_right': { x: 0, y: 0, z: -0.5 },
+                'stop': { x: 0, y: 0, z: 0 }
+            };
+            const dirNames = {
+                'forward': '⬆️ Forward',
+                'backward': '⬇️ Backward',
+                'left': '⬅️ Left',
+                'right': '➡️ Right',
+                'rotate_left': '↺ Rotate Left',
+                'rotate_right': '↻ Rotate Right',
+                'stop': '⏹️ Stop'
+            };
+
+            dirButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const dir = this.dataset.dir;
+                    const cmd = dirMap[dir];
+                    if (!cmd) return;
+                    publishMqtt(CONFIG.topicManualControl, { command: dir, linear_x: cmd.x, linear_y: cmd.y,
+                        angular_z: cmd.z });
+                    if (manualStatus) {
+                        manualStatus.textContent = `🚀 Sent: ${dirNames[dir] || dir}`;
+                        manualStatus.style.color = '#4ecdc4';
+                        setTimeout(() => {
+                            manualStatus.textContent = 'Tap a direction to send command';
+                            manualStatus.style.color = '#888';
+                        }, 2000);
+                    }
+                });
+                btn.addEventListener('touchstart', function(e) {}, { passive: true });
+            });
+
+            // ==========================================
+            // DEMO MODE – with fallback artifacts
+            // ==========================================
+            const DEFAULT_ARTIFACTS = [{
                 id: 'vase',
                 name: 'Ancient Ming Vase',
                 origin: 'China',
@@ -1086,21 +2795,53 @@
                 material_fr: 'Métaux variés'
             }];
 
-            // Demo state machine
+            let demoArtifacts = [];
             let demoState = 'idle';
             let demoStep = 0;
 
+            async function loadDemoArtifacts() {
+                try {
+                    const res = await fetch(CONFIG.sheetApiUrl + '?action=getArtifacts&_=' + Date.now());
+                    const data = await res.json();
+                    if (data.error) {
+                        console.warn('Demo artifact load error:', data.error);
+                        demoArtifacts = DEFAULT_ARTIFACTS;
+                        return;
+                    }
+                    const artifacts = data.artifacts || [];
+                    if (artifacts.length === 0) {
+                        console.warn('No artifacts in Google Sheets. Using default artifacts.');
+                        demoArtifacts = DEFAULT_ARTIFACTS;
+                    } else {
+                        demoArtifacts = artifacts;
+                    }
+                } catch (e) {
+                    console.warn('Failed to load demo artifacts:', e);
+                    demoArtifacts = DEFAULT_ARTIFACTS;
+                }
+            }
+
+            function getRandomArtifact() {
+                if (demoArtifacts.length === 0) return null;
+                return demoArtifacts[Math.floor(Math.random() * demoArtifacts.length)];
+            }
+
             function startDemo() {
                 if (demoMode) return;
+                if (demoArtifacts.length === 0) {
+                    alert('No artifacts available for demo. Using default artifacts.');
+                    demoArtifacts = DEFAULT_ARTIFACTS;
+                }
                 demoMode = true;
                 demoState = 'idle';
                 demoStep = 0;
-                demoModeBtn.textContent = '⏹️ Stop Demo';
-                demoStatus.textContent = 'Demo: Running';
-                demoStatus.style.color = '#4ecdc4';
-
-                let temp = 24;
-                let humid = 55;
+                if (demoModeBtn) demoModeBtn.textContent = '⏹️ Stop Demo';
+                if (demoStatus) {
+                    demoStatus.textContent = 'Demo: Running';
+                    demoStatus.style.color = '#4ecdc4';
+                }
+                let temp = 24,
+                    humid = 55;
 
                 demoInterval = setInterval(() => {
                     demoStep++;
@@ -1124,7 +2865,6 @@
                                 window.demoEta = 8.0;
                             }
                             break;
-
                         case 'moving':
                             if (window.demoProgress !== undefined) {
                                 window.demoProgress += 0.05;
@@ -1135,10 +2875,12 @@
                                             .demoTargetY,
                                         progress: 1.0, eta: 0 });
                                     handleState({ state: 'presenting' });
-                                    greetingBox.textContent = '👋 Hello! Welcome to the museum!';
-                                    const artifact = demoArtifacts[Math.floor(Math.random() * demoArtifacts.length)];
-                                    handleArtifact(artifact);
-                                    handleWelcome({ message: 'Hello! Welcome to the museum!' });
+                                    if (greetingBox) greetingBox.textContent = '👋 Hello! Welcome to the museum!';
+                                    const artifact = getRandomArtifact();
+                                    if (artifact) {
+                                        handleArtifact(artifact);
+                                        handleWelcome({ message: 'Hello! Welcome to the museum!' });
+                                    }
                                     demoState = 'presenting';
                                 } else {
                                     window.demoEta = Math.max(0, (1 - window.demoProgress) * 8);
@@ -1153,499 +2895,48 @@
                                 }
                             }
                             break;
-
                         case 'presenting':
                             break;
-
-                        default:
-                            break;
+                        default: break;
                     }
                 }, 2000);
             }
 
             function stopDemo() {
-                if (demoInterval) {
-                    clearInterval(demoInterval);
-                    demoInterval = null;
-                }
+                if (demoInterval) { clearInterval(demoInterval);
+                    demoInterval = null; }
                 demoMode = false;
                 demoState = 'idle';
-                demoModeBtn.textContent = '▶️ Start Demo';
-                demoStatus.textContent = 'Demo: Off';
-                demoStatus.style.color = '#888';
+                if (demoModeBtn) demoModeBtn.textContent = '▶️ Start Demo';
+                if (demoStatus) {
+                    demoStatus.textContent = 'Demo: Off';
+                    demoStatus.style.color = '#888';
+                }
                 handleState({ state: 'idle' });
                 handleCrowd({ count: 0, moving: false });
-                progressFill.style.width = '0%';
-                etaDisplay.textContent = '⏱️ ETA: -- s';
-                coordDisplay.textContent = 'Target: (--, --)';
+                if (progressFill) progressFill.style.width = '0%';
+                if (etaDisplay) etaDisplay.textContent = '⏱️ ETA: -- s';
+                if (coordDisplay) coordDisplay.textContent = 'Target: (--, --)';
+                if (crowdLocationDisplay) crowdLocationDisplay.textContent = '--';
             }
 
-            demoModeBtn.addEventListener('click', function() {
-                if (demoMode) {
-                    stopDemo();
-                } else {
-                    startDemo();
-                }
-            });
-
-            // ==========================================
-            // MQTT CLIENT
-            // ==========================================
-            function connectMQTT() {
-                try {
-                    mqttClient = mqtt.connect(CONFIG.mqttBroker, {
-                        keepalive: 60,
-                        reconnectPeriod: 3000,
-                    });
-
-                    mqttClient.on('connect', function() {
-                        console.log('✅ MQTT connected');
-                        mqttConnected = true;
-                        mqttDot.className = 'dot online';
-                        mqttLabel.textContent = 'MQTT: Connected';
-
-                        mqttClient.subscribe(CONFIG.topicArtifact);
-                        mqttClient.subscribe(CONFIG.topicWelcome);
-                        mqttClient.subscribe(CONFIG.topicSensor);
-                        mqttClient.subscribe(CONFIG.topicCrowd);
-                        mqttClient.subscribe(CONFIG.topicState);
-                        mqttClient.subscribe(CONFIG.topicRobotPos);
-                        console.log('📡 Subscribed to all topics');
-                    });
-
-                    mqttClient.on('message', function(topic, message) {
-                        const payload = message.toString();
-                        console.log(`📩 MQTT: ${topic} → ${payload}`);
-                        handleMqttMessage(topic, payload);
-                    });
-
-                    mqttClient.on('error', function(err) {
-                        console.error('❌ MQTT error:', err);
-                        mqttDot.className = 'dot offline';
-                        mqttLabel.textContent = 'MQTT: Error';
-                    });
-
-                    mqttClient.on('close', function() {
-                        console.warn('⚠️ MQTT disconnected');
-                        mqttConnected = false;
-                        mqttDot.className = 'dot offline';
-                        mqttLabel.textContent = 'MQTT: Disconnected';
-                    });
-
-                } catch (e) {
-                    console.error('❌ MQTT init error:', e);
-                }
-            }
-
-            // ==========================================
-            // MQTT MESSAGE HANDLER
-            // ==========================================
-            function handleMqttMessage(topic, payload) {
-                try {
-                    const data = JSON.parse(payload);
-                    switch (topic) {
-                        case CONFIG.topicArtifact:
-                            handleArtifact(data);
-                            break;
-                        case CONFIG.topicWelcome:
-                            handleWelcome(data);
-                            break;
-                        case CONFIG.topicSensor:
-                            handleSensor(data);
-                            break;
-                        case CONFIG.topicCrowd:
-                            handleCrowd(data);
-                            break;
-                        case CONFIG.topicState:
-                            handleState(data);
-                            break;
-                        case CONFIG.topicRobotPos:
-                            handleRobotPos(data);
-                            break;
-                        default:
-                            console.log('📬 Unhandled topic:', topic);
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Could not parse MQTT payload:', payload);
-                }
-            }
-
-            // ==========================================
-            // HANDLERS
-            // ==========================================
-
-            function handleArtifact(data) {
-                console.log('🏺 Artifact detected:', data);
-                currentArtifactData = data;
-                if (currentState !== 'presenting') {
-                    switchSection('presenting');
-                }
-                displayArtifact(data, currentLang);
-                speakCurrentArtifact();
-            }
-
-            function handleWelcome(data) {
-                console.log('👋 Welcome trigger:', data);
-                if (data.message) {
-                    greetingBox.textContent = '👋 ' + data.message;
-                }
-                switchSection('presenting');
-            }
-
-            function handleSensor(data) {
-                console.log('🌡️ Sensor data:', data);
-                if (data.temperature !== undefined) {
-                    tempDisplay.textContent = data.temperature.toFixed(1) + '°C';
-                }
-                if (data.humidity !== undefined) {
-                    humidDisplay.textContent = data.humidity.toFixed(1) + '%';
-                }
-                checkSensorAlert(data);
-            }
-
-            function handleCrowd(data) {
-                if (data.target_x !== undefined) data.target_x = parseFloat(data.target_x);
-                if (data.target_y !== undefined) data.target_y = parseFloat(data.target_y);
-                if (data.progress !== undefined) data.progress = parseFloat(data.progress);
-                if (data.eta !== undefined) data.eta = parseFloat(data.eta);
-
-                console.log('👥 Crowd data:', data);
-                if (data.count !== undefined) {
-                    crowdCountDisplay.textContent = data.count;
-                }
-                if (data.count >= 2 && data.moving === true) {
-                    if (currentState !== 'presenting') {
-                        switchSection('driving');
-                    }
-                    if (data.target_x !== undefined && data.target_y !== undefined) {
-                        coordDisplay.textContent = `Target: (${data.target_x.toFixed(1)}, ${data.target_y.toFixed(1)})`;
-                    }
-                    if (data.progress !== undefined) {
-                        progressFill.style.width = Math.min(100, data.progress * 100) + '%';
-                    }
-                    if (data.eta !== undefined) {
-                        etaDisplay.textContent = `⏱️ ETA: ${data.eta.toFixed(1)} s`;
-                    }
-                }
-                if (data.count === 0 && currentState === 'idle') {}
-            }
-
-            function handleState(data) {
-                console.log('📊 Robot state:', data);
-                if (data.state) {
-                    stateLabel.textContent = data.state.charAt(0).toUpperCase() + data.state.slice(1);
-                    adminStateLabel.textContent = data.state.charAt(0).toUpperCase() + data.state.slice(1);
-                }
-                if (currentState !== 'presenting') {
-                    if (data.state === 'idle') {
-                        switchSection('welcome');
-                    } else if (data.state === 'moving' || data.state === 'driving') {
-                        switchSection('driving');
-                    } else if (data.state === 'presenting' || data.state === 'greeting') {
-                        switchSection('presenting');
-                    }
-                }
-            }
-
-            function handleRobotPos(data) {
-                if (currentState === 'driving') {
-                    if (data.target_x !== undefined && data.target_y !== undefined) {
-                        coordDisplay.textContent = `Target: (${data.target_x.toFixed(1)}, ${data.target_y.toFixed(1)})`;
-                    }
-                    if (data.progress !== undefined) {
-                        progressFill.style.width = Math.min(100, data.progress * 100) + '%';
-                    }
-                    if (data.eta !== undefined) {
-                        etaDisplay.textContent = `⏱️ ETA: ${data.eta.toFixed(1)} s`;
-                    }
-                }
-            }
-
-            // ==========================================
-            // DISPLAY ARTIFACT
-            // ==========================================
-            function displayArtifact(artifact, lang) {
-                if (!artifact) return;
-
-                let name = artifact.name || 'Unknown Artifact';
-                let desc = artifact.description || 'No description.';
-                let year = artifact.year || '';
-                let origin = artifact.origin || '';
-                let material = artifact.material || '';
-                let emoji = artifact.emoji || '🏺';
-
-                if (lang === 'ms') {
-                    desc = artifact.description_ms || desc;
-                    year = artifact.year_ms || year;
-                    origin = artifact.origin_ms || origin;
-                    material = artifact.material_ms || material;
-                } else if (lang === 'fr') {
-                    desc = artifact.description_fr || desc;
-                    year = artifact.year_fr || year;
-                    origin = artifact.origin_fr || origin;
-                    material = artifact.material_fr || material;
-                }
-
-                artifactName.textContent = name;
-                artifactMeta.textContent = [origin, year, material].filter(Boolean).join(' • ') || 'Unknown origin';
-                artifactDesc.textContent = desc;
-
-                if (artifact.image_url) {
-                    artifactImage.innerHTML = `<img src="${artifact.image_url}" alt="${name}" />`;
-                } else {
-                    artifactImage.textContent = emoji;
-                }
-
-                artifactDisplay.classList.add('active');
-
-                window.currentSpeakText = `${name}. ${desc}`;
-                window.currentLangCode = lang === 'ms' ? 'ms-MY' : (lang === 'fr' ? 'fr-FR' : 'en-US');
-
-                const langNames = { 'ms': 'Bahasa Melayu', 'en': 'English', 'fr': 'Français' };
-                langIndicator.textContent = `🔊 Speaking: ${langNames[lang] || 'English'}`;
-
-                langButtons.forEach(btn => {
-                    btn.classList.remove('active');
-                    if (btn.dataset.lang === lang) {
-                        btn.classList.add('active');
-                    }
-                });
-            }
-
-            // ==========================================
-            // SPEAK CURRENT ARTIFACT (Web Speech API)
-            // ==========================================
-            function speakCurrentArtifact() {
-                if (!window.currentSpeakText) return;
-                const text = window.currentSpeakText;
-                const langCode = window.currentLangCode || 'en-US';
-
-                // Cancel any ongoing speech
-                if (window.speechSynthesis) {
-                    window.speechSynthesis.cancel();
-                }
-
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = langCode;
-                utterance.rate = 0.9;
-                utterance.pitch = 1.0;
-
-                // Try to find a matching voice
-                const voices = window.speechSynthesis.getVoices();
-                let voice = voices.find(v => v.lang === langCode);
-                if (!voice) {
-                    const prefix = langCode.split('-')[0];
-                    voice = voices.find(v => v.lang.startsWith(prefix));
-                }
-                if (voice) {
-                    utterance.voice = voice;
-                    console.log(`🗣️ Using voice: ${voice.name} (${voice.lang})`);
-                } else {
-                    console.warn(`⚠️ No voice found for ${langCode}, using default.`);
-                }
-
-                utterance.onstart = function() {
-                    isSpeaking = true;
-                    langIndicator.textContent = `🔊 Speaking: ${text.substring(0, 40)}...`;
-                };
-
-                utterance.onend = function() {
-                    isSpeaking = false;
-                    langIndicator.textContent = `✅ Finished speaking (${langCode})`;
-                };
-
-                utterance.onerror = function(e) {
-                    console.error('❌ Speech error:', e);
-                    isSpeaking = false;
-                    langIndicator.textContent = `❌ Speech error`;
-                };
-
-                window.speechSynthesis.speak(utterance);
-            }
-
-            // ==========================================
-            // SENSOR ALERT
-            // ==========================================
-            function checkSensorAlert(data) {
-                let alertMsg = '';
-                let alertClass = '';
-
-                if (data.temperature !== undefined) {
-                    if (data.temperature > 30) {
-                        alertMsg = '⚠️ Temperature is too HIGH! Artifacts may be at risk.';
-                        alertClass = 'danger';
-                    } else if (data.temperature < 15) {
-                        alertMsg = '⚠️ Temperature is too LOW! Artifacts may be at risk.';
-                        alertClass = 'danger';
-                    }
-                }
-
-                if (data.humidity !== undefined) {
-                    if (data.humidity > 70) {
-                        alertMsg = alertMsg || '⚠️ Humidity is too HIGH! Artifacts may be at risk.';
-                        alertClass = 'danger';
-                    } else if (data.humidity < 20) {
-                        alertMsg = alertMsg || '⚠️ Humidity is too LOW! Artifacts may be at risk.';
-                        alertClass = 'danger';
-                    }
-                }
-
-                if (alertMsg) {
-                    sensorAlert.textContent = alertMsg;
-                    sensorAlert.className = 'sensor-alert ' + alertClass;
-                    sensorAlert.style.display = 'block';
-                } else {
-                    sensorAlert.textContent = '✅ Temperature and humidity are within safe range.';
-                    sensorAlert.className = 'sensor-alert';
-                    sensorAlert.style.display = 'block';
-                    sensorAlert.style.background = 'rgba(78, 205, 196, 0.10)';
-                    sensorAlert.style.border = '1px solid rgba(78, 205, 196, 0.2)';
-                    sensorAlert.style.color = '#4ecdc4';
-                }
-            }
-
-            // ==========================================
-            // SECTION SWITCHING
-            // ==========================================
-            function switchSection(sectionName) {
-                Object.keys(sections).forEach(key => {
-                    sections[key].classList.remove('active');
-                });
-                if (sections[sectionName]) {
-                    sections[sectionName].classList.add('active');
-                    currentState = sectionName;
-                    const stateMap = {
-                        'welcome': 'Idle',
-                        'driving': 'Driving',
-                        'presenting': 'Presenting',
-                        'admin': 'Admin'
-                    };
-                    stateLabel.textContent = stateMap[sectionName] || sectionName;
-                    adminStateLabel.textContent = stateMap[sectionName] || sectionName;
-                }
-            }
-
-            // ==========================================
-            // ADMIN
-            // ==========================================
-            let adminLoggedIn = false;
-
-            adminToggleBtn.addEventListener('click', function() {
-                if (adminLoggedIn) {
-                    switchSection('admin');
-                } else {
-                    switchSection('admin');
-                    adminLogin.classList.remove('hidden');
-                    adminPanel.classList.remove('active');
-                }
-            });
-
-            adminLoginBtn.addEventListener('click', function() {
-                const pass = adminPassword.value.trim();
-                if (pass === CONFIG.adminPassword) {
-                    adminLoggedIn = true;
-                    adminLogin.classList.add('hidden');
-                    adminPanel.classList.add('active');
-                    adminLoginError.textContent = '';
-                    adminPassword.value = '';
-                } else {
-                    adminLoginError.textContent = '❌ Incorrect password. Try again.';
-                }
-            });
-
-            adminPassword.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    adminLoginBtn.click();
-                }
-            });
-
-            adminLogoutBtn.addEventListener('click', function() {
-                adminLoggedIn = false;
-                adminLogin.classList.remove('hidden');
-                adminPanel.classList.remove('active');
-                adminLoginError.textContent = '';
-                switchSection('welcome');
-            });
-
-            minRangeSlider.addEventListener('input', function() {
-                minRangeVal.textContent = parseFloat(this.value).toFixed(1);
-            });
-            maxRangeSlider.addEventListener('input', function() {
-                maxRangeVal.textContent = parseFloat(this.value).toFixed(1);
-            });
-            speedSlider.addEventListener('input', function() {
-                speedVal.textContent = parseFloat(this.value).toFixed(2);
-            });
-
-            applyRangeBtn.addEventListener('click', function() {
-                const min = parseFloat(minRangeSlider.value);
-                const max = parseFloat(maxRangeSlider.value);
-                publishMqtt('museum/admin/range', { min: min, max: max });
-                alert(`✅ Detection range set to ${min}m - ${max}m`);
-            });
-
-            applySpeedBtn.addEventListener('click', function() {
-                const speed = parseFloat(speedSlider.value);
-                publishMqtt('museum/admin/speed', { speed: speed });
-                alert(`✅ Movement speed set to ${speed.toFixed(2)} m/s`);
-            });
-
-            adminResetBtn.addEventListener('click', function() {
-                if (confirm('Reset robot to idle state?')) {
-                    publishMqtt('museum/admin/reset', { action: 'reset' });
-                    switchSection('welcome');
+            if (demoModeBtn) {
+                demoModeBtn.addEventListener('click', function() {
                     if (demoMode) stopDemo();
-                }
-            });
-
-            // ==========================================
-            // MANUAL CONTROL
-            // ==========================================
-            const dirButtons = document.querySelectorAll('.dir-btn');
-
-            const dirMap = {
-                'forward': { x: 0.3, y: 0, z: 0 },
-                'backward': { x: -0.3, y: 0, z: 0 },
-                'left': { x: 0, y: 0.3, z: 0 },
-                'right': { x: 0, y: -0.3, z: 0 },
-                'rotate_left': { x: 0, y: 0, z: 0.5 },
-                'rotate_right': { x: 0, y: 0, z: -0.5 },
-                'stop': { x: 0, y: 0, z: 0 }
-            };
-
-            dirButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const dir = this.dataset.dir;
-                    const cmd = dirMap[dir];
-                    if (!cmd) return;
-
-                    publishMqtt(CONFIG.topicManualControl, {
-                        command: dir,
-                        linear_x: cmd.x,
-                        linear_y: cmd.y,
-                        angular_z: cmd.z
-                    });
-
-                    const dirNames = {
-                        'forward': '⬆️ Forward',
-                        'backward': '⬇️ Backward',
-                        'left': '⬅️ Left',
-                        'right': '➡️ Right',
-                        'rotate_left': '↺ Rotate Left',
-                        'rotate_right': '↻ Rotate Right',
-                        'stop': '⏹️ Stop'
-                    };
-                    manualStatus.textContent = `🚀 Sent: ${dirNames[dir] || dir}`;
-                    manualStatus.style.color = '#4ecdc4';
-
-                    setTimeout(() => {
-                        manualStatus.textContent = 'Tap a direction to send command';
-                        manualStatus.style.color = '#888';
-                    }, 2000);
+                    else startDemo();
                 });
+            }
 
-                btn.addEventListener('touchstart', function(e) {}, { passive: true });
-            });
+            // ==========================================
+            // CONFIG REFRESH BUTTON
+            // ==========================================
+            if (refreshConfigBtn) {
+                refreshConfigBtn.addEventListener('click', function() {
+                    loadConfigFromSheets();
+                    this.textContent = '🔄 Loading...';
+                    setTimeout(() => { this.textContent = '🔄 Refresh Config'; }, 3000);
+                });
+            }
 
             // ==========================================
             // PUBLISH MQTT
@@ -1664,7 +2955,7 @@
             // PRESENTING BUTTONS
             // ==========================================
 
-            langButtons.forEach(function(btn) {
+            document.querySelectorAll('.lang-buttons button').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const lang = this.dataset.lang;
                     currentLang = lang;
@@ -1675,33 +2966,37 @@
                 });
             });
 
-            replayBtn.addEventListener('click', function() {
-                if (currentArtifactData) {
-                    speakCurrentArtifact();
-                } else {
-                    alert('No artifact data to replay.');
-                }
-            });
+            if (replayBtn) {
+                replayBtn.addEventListener('click', function() {
+                    if (currentArtifactData) speakCurrentArtifact();
+                    else alert('No artifact data to replay.');
+                });
+            }
 
-            doneBtn.addEventListener('click', function() {
-                publishMqtt('museum/done', { action: 'done' });
-                artifactDisplay.classList.remove('active');
-                greetingBox.textContent = '👋 Thank you for visiting!';
-                switchSection('welcome');
-                sensorAlert.style.display = 'none';
-                sensorAlert.className = 'sensor-alert';
-                if (demoMode) {
-                    demoState = 'idle';
-                    progressFill.style.width = '0%';
-                    etaDisplay.textContent = '⏱️ ETA: -- s';
-                    coordDisplay.textContent = 'Target: (--, --)';
-                    crowdCountDisplay.textContent = '0';
-                }
-                currentArtifactData = null;
-            });
+            if (doneBtn) {
+                doneBtn.addEventListener('click', function() {
+                    publishMqtt('museum/done', { action: 'done' });
+                    if (artifactDisplay) artifactDisplay.classList.remove('active');
+                    if (greetingBox) greetingBox.textContent = '👋 Thank you for visiting!';
+                    switchSection('welcome');
+                    if (sensorAlert) {
+                        sensorAlert.style.display = 'none';
+                        sensorAlert.className = 'sensor-alert';
+                    }
+                    if (demoMode) {
+                        demoState = 'idle';
+                        if (progressFill) progressFill.style.width = '0%';
+                        if (etaDisplay) etaDisplay.textContent = '⏱️ ETA: -- s';
+                        if (coordDisplay) coordDisplay.textContent = 'Target: (--, --)';
+                        if (crowdCountDisplay) crowdCountDisplay.textContent = '0';
+                        if (crowdLocationDisplay) crowdLocationDisplay.textContent = '--';
+                    }
+                    currentArtifactData = null;
+                });
+            }
 
             // ==========================================
-            // LOAD VOICES (for Web Speech)
+            // LOAD VOICES
             // ==========================================
             if (window.speechSynthesis) {
                 window.speechSynthesis.getVoices();
@@ -1711,20 +3006,42 @@
             }
 
             // ==========================================
+            // AUTO-REFRESH LOGS
+            // ==========================================
+            function refreshLogs() {
+                if (adminLoggedIn) {
+                    loadAlarms();
+                    loadMovementLogs();
+                }
+            }
+
+            // ==========================================
             // INIT
             // ==========================================
-            console.log('🏛️ Museum Guide Webpage Starting...');
+            console.log('🏛️ Museum Dashboard Starting...');
             console.log('📡 Connecting to MQTT broker:', CONFIG.mqttBroker);
-            console.log('🗣️ Using Web Speech API (built-in browser TTS)');
-
             connectMQTT();
             switchSection('welcome');
-            tempDisplay.textContent = '--°C';
-            humidDisplay.textContent = '--%';
-            crowdCountDisplay.textContent = '0';
+            if (tempDisplay) tempDisplay.textContent = '--°C';
+            if (humidDisplay) humidDisplay.textContent = '--%';
+            if (crowdCountDisplay) crowdCountDisplay.textContent = '0';
+            if (crowdLocationDisplay) crowdLocationDisplay.textContent = '--';
+
+            // Load config from Google Sheets
+            loadConfigFromSheets();
+            // Load demo artifacts with fallback
+            loadDemoArtifacts();
+            // Fetch charts
+            fetchSensorHistory();
+            fetchArtifactScans();
+
+            // Auto-refresh
+            setInterval(loadConfigFromSheets, 30000);
+            setInterval(fetchSensorHistory, 15000);
+            setInterval(fetchArtifactScans, 30000);
+            setInterval(refreshLogs, 15000);
 
             console.log('✅ Ready! Use "Start Demo" to simulate robot data.');
-
         })();
     </script>
 

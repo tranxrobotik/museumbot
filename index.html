@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
     <style>
-        /* ====== same as before ====== */
+        /* ====== RESET & BASE ====== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a1a; color: #eee; min-height: 100vh; overflow-x: hidden; }
         #app { width: 100%; min-height: 100vh; max-width: 1200px; margin: 0 auto; background: linear-gradient(145deg, #12122a, #1a1a3e); padding: 15px 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; overflow-y: auto; }
@@ -121,6 +121,108 @@
         @media (max-width: 800px) { .chart-grid { grid-template-columns: 1fr; } .modal-content { max-width: 95%; } .manual-control-panel .btn-grid { max-width: 100%; } }
         @media (max-width: 600px) { #app { padding:12px 15px; border-radius:0; } .top-bar .title { font-size:1rem; } .top-bar .status-badge { font-size:0.6rem; padding:3px 10px; } .top-bar .admin-btn { font-size:0.65rem; padding:3px 10px; } #welcome-section h2 { font-size:1.4rem; } .robot-face { font-size:3rem; } .sensor-card { padding:10px 14px; min-width:80px; max-width:120px; } .sensor-card .value { font-size:1.2rem; } .sensor-card .label { font-size:0.6rem; } .manual-control-panel .btn-grid button { font-size:1.6rem; padding:10px 0; min-height:55px; } }
         @media (max-width: 400px) { #app { padding:8px 10px; } .top-bar .title { font-size:0.9rem; } #welcome-section h2 { font-size:1.2rem; } .sensor-card { padding:8px 10px; min-width:60px; } .sensor-card .value { font-size:1rem; } .manual-control-panel .btn-grid button { font-size:1.4rem; padding:8px 0; min-height:45px; } }
+
+        /* ====== ARTIFACT DISPLAY (local viewer style) ====== */
+        #presenting-section .presenting-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+        }
+        #presenting-section .greeting-box {
+            background: rgba(233,69,96,0.10);
+            border: 1px solid rgba(233,69,96,0.2);
+            border-radius: 14px;
+            padding: 14px 18px;
+            text-align: center;
+            font-size: 1.1rem;
+            color: #e94560;
+            animation: pulse 2s infinite;
+        }
+        #presenting-section .artifact-display {
+            display: none;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 18px;
+            padding: 20px;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        #presenting-section .artifact-display.active {
+            display: flex;
+        }
+        #presenting-section .artifact-emoji { font-size: 4rem; }
+        #presenting-section .artifact-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 10px;
+            border: 1px solid #555;
+        }
+        #presenting-section .artifact-name {
+            font-size: 1.8rem;
+            color: #e94560;
+            margin: 8px 0 0;
+        }
+        #presenting-section .artifact-meta {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        #presenting-section .artifact-desc {
+            color: #ccc;
+            line-height: 1.5;
+            text-align: center;
+            max-width: 600px;
+        }
+        #presenting-section .lang-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        #presenting-section .lang-tabs button {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid #555;
+            color: #ccc;
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        #presenting-section .lang-tabs button.active {
+            background: #e94560;
+            border-color: #e94560;
+            color: #fff;
+        }
+        #presenting-section .action-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        #presenting-section .action-row button {
+            padding: 10px 30px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+        #presenting-section .tts-btn {
+            background: #ffd93d;
+            color: #0a0a1a;
+        }
+        #presenting-section .done-btn {
+            background: #e94560;
+            color: #fff;
+        }
+        #presenting-section .done-btn:hover {
+            background: #c73652;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
     </style>
 </head>
 <body>
@@ -209,27 +311,25 @@
         </div>
     </div>
 
-    <!-- PRESENTING -->
+    <!-- PRESENTING (updated) -->
     <div id="presenting-section" class="section">
         <div class="presenting-content">
             <div class="greeting-box" id="greetingBox">👋 Hello! Welcome to the museum!</div>
             <div class="artifact-display" id="artifactDisplay">
-                <div class="image-area" id="artifactImage">🏺</div>
-                <div class="info-area">
-                    <h3 id="artifactName">Artifact Name</h3>
-                    <div class="meta" id="artifactMeta">Origin • Year • Material</div>
-                    <div class="desc" id="artifactDesc">Description goes here.</div>
-                    <div class="lang-indicator" id="langIndicator">🔊 Speaking: English</div>
-                    <div class="lang-buttons">
-                        <button data-lang="ms">🇲🇾 Bahasa Melayu</button>
-                        <button data-lang="en" class="active">🇬🇧 English</button>
-                        <button data-lang="fr">🇫🇷 Français</button>
-                    </div>
+                <div class="artifact-emoji" id="artifactEmoji">🏺</div>
+                <img class="artifact-image" id="artifactImage" src="" alt="Artifact Image" style="display:none;" />
+                <div class="artifact-name" id="artifactName">Artifact Name</div>
+                <div class="artifact-meta" id="artifactMeta">Origin • Year • Material</div>
+                <div class="artifact-desc" id="artifactDesc">Description</div>
+                <div class="lang-tabs" id="langTabs">
+                    <button data-lang="ms" class="active">🇲🇾 BM</button>
+                    <button data-lang="en">🇬🇧 English</button>
+                    <button data-lang="fr">🇫🇷 Français</button>
                 </div>
-            </div>
-            <div class="action-row">
-                <button class="secondary" id="replayBtn">🔁 Replay Info</button>
-                <button class="primary" id="doneBtn">✅ Done / Finish</button>
+                <div class="action-row">
+                    <button class="tts-btn" id="replayBtn">🔊 Speak</button>
+                    <button class="done-btn" id="doneBtn">✅ Done</button>
+                </div>
             </div>
         </div>
     </div>
@@ -490,14 +590,18 @@
         const progressFill = getEl('progressFill');
         const etaDisplay = getEl('etaDisplay');
         const greetingBox = getEl('greetingBox');
+        // New artifact display elements
         const artifactDisplay = getEl('artifactDisplay');
         const artifactImage = getEl('artifactImage');
+        const artifactEmoji = getEl('artifactEmoji');
         const artifactName = getEl('artifactName');
         const artifactMeta = getEl('artifactMeta');
         const artifactDesc = getEl('artifactDesc');
         const langIndicator = getEl('langIndicator');
         const replayBtn = getEl('replayBtn');
         const doneBtn = getEl('doneBtn');
+        const langTabs = getEl('langTabs');
+
         const demoModeBtn = getEl('demoModeBtn');
         const demoStatus = getEl('demoStatus');
         const adminToggleBtn = getEl('adminToggleBtn');
@@ -541,7 +645,7 @@
         const applyMinDetectionsBtn = getEl('applyMinDetectionsBtn');
         const saveAllConfigBtn = getEl('saveAllConfigBtn');
 
-        // NEW alarm threshold controls
+        // Alarm threshold controls
         const tempHighSlider = getEl('tempHighSlider');
         const tempHighVal = getEl('tempHighVal');
         const applyTempHighBtn = getEl('applyTempHighBtn');
@@ -637,6 +741,7 @@
         simModal.addEventListener('click', function(e) { if (e.target === simModal) simModal.classList.remove('active'); });
 
         // ====== DIRECTION MAP ======
+        // Values kept exactly as you set them
         const dirMap = {
             'forward': { x: -0.3, y: 0, z: 0 },
             'backward': { x: 0.3, y: 0, z: 0 },
@@ -648,8 +753,7 @@
             'backward_right': { x: -0.2, y: -0.2, z: 0 },
             'rotate_left': { x: 0, y: 0, z: 0.5 },
             'rotate_right': { x: 0, y: 0, z: -0.5 },
-            'stop': { x: 0, y: 0, z: 0 },
-            'reset': {'x': 0, 'y': 0, 'z': 0, 'reset': True}
+            'stop': { x: 0, y: 0, z: 0 }
         };
         const dirNames = {
             'forward': 'Forward', 'backward': 'Backward',
@@ -657,7 +761,7 @@
             'forward_left': 'Fwd-Left', 'forward_right': 'Fwd-Right',
             'backward_left': 'Bwd-Left', 'backward_right': 'Bwd-Right',
             'rotate_left': 'Rotate Left', 'rotate_right': 'Rotate Right',
-            'stop': 'Stop', 'reset': 'Reset'
+            'stop': 'Stop'
         };
 
         function publishManualCommand(dir) {
@@ -1189,20 +1293,23 @@
             currentArtifactData = data;
             if (currentState !== 'presenting') switchSection('presenting');
             displayArtifact(data, currentLang);
-            speakCurrentArtifact();
+            speakArtifact();
             fetchArtifactScans();
         }
+
         function handleWelcome(data) {
             console.log('👋 Welcome trigger:', data);
             if (data.message && greetingBox) greetingBox.textContent = '👋 ' + data.message;
             switchSection('presenting');
         }
+
         function handleSensor(data) {
             console.log('🌡️ Sensor data:', data);
             if (data.temperature !== undefined && tempDisplay) tempDisplay.textContent = data.temperature.toFixed(1) + '°C';
             if (data.humidity !== undefined && humidDisplay) humidDisplay.textContent = data.humidity.toFixed(1) + '%';
             checkSensorAlert(data);
         }
+
         function handleCrowd(data) {
             if (data.target_x !== undefined) data.target_x = parseFloat(data.target_x);
             if (data.target_y !== undefined) data.target_y = parseFloat(data.target_y);
@@ -1228,6 +1335,7 @@
                 if (crowdLocationDisplay) crowdLocationDisplay.textContent = '--';
             }
         }
+
         function handleState(data) {
             console.log('📊 Robot state:', data);
             if (data.state) {
@@ -1239,6 +1347,7 @@
                 else if (data.state === 'presenting' || data.state === 'greeting') switchSection('presenting');
             }
         }
+
         function handleRobotPos(data) {
             if (currentState === 'driving') {
                 if (data.target_x !== undefined && data.target_y !== undefined && coordDisplay)
@@ -1248,6 +1357,7 @@
             }
         }
 
+        // ---- Artifact display functions ----
         function displayArtifact(artifact, lang) {
             if (!artifact) return;
             let name = artifact.name || 'Unknown Artifact';
@@ -1256,6 +1366,7 @@
             let origin = artifact.origin || '';
             let material = artifact.material || '';
             let emoji = artifact.emoji || '🏺';
+            let imgUrl = artifact.image_url || '';
             if (lang === 'ms') {
                 desc = artifact.description_ms || desc;
                 year = artifact.year_ms || year;
@@ -1272,44 +1383,65 @@
             artifactName.textContent = name;
             artifactMeta.textContent = [origin, year, material].filter(Boolean).join(' • ') || 'Unknown origin';
             artifactDesc.textContent = desc;
-            if (artifactImage) {
-                if (artifact.image_url) artifactImage.innerHTML = `<img src="${artifact.image_url}" alt="${name}"  height="240px"/>`;
-                else artifactImage.textContent = emoji;
+            // Show image if URL exists, otherwise show emoji
+            if (imgUrl) {
+                artifactImage.src = imgUrl;
+                artifactImage.style.display = 'block';
+                artifactEmoji.style.display = 'none';
+            } else {
+                artifactImage.style.display = 'none';
+                artifactEmoji.style.display = 'block';
+                artifactEmoji.textContent = emoji;
             }
             artifactDisplay.classList.add('active');
             window.currentSpeakText = `${name}. ${desc}`;
             window.currentLangCode = lang === 'ms' ? 'ms-MY' : (lang === 'fr' ? 'fr-FR' : 'en-US');
+            // Update language tabs
+            const langTabs = document.querySelectorAll('#langTabs button');
+            langTabs.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+            // Update indicator
             const langNames = { 'ms': 'Bahasa Melayu', 'en': 'English', 'fr': 'Français' };
             if (langIndicator) langIndicator.textContent = `🔊 Speaking: ${langNames[lang] || 'English'}`;
-            const langButtons = document.querySelectorAll('.lang-buttons button');
-            langButtons.forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.lang === lang) btn.classList.add('active');
-            });
         }
 
-        function speakCurrentArtifact() {
+        function speakArtifact() {
             if (!window.currentSpeakText) return;
             const text = window.currentSpeakText;
             const langCode = window.currentLangCode || 'en-US';
-            if (window.speechSynthesis) window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = langCode;
-            utterance.rate = 0.9;
-            utterance.pitch = 1.0;
-            const voices = window.speechSynthesis.getVoices();
-            let voice = voices.find(v => v.lang === langCode);
-            if (!voice) {
-                const prefix = langCode.split('-')[0];
-                voice = voices.find(v => v.lang.startsWith(prefix));
+            if (window.speechSynthesis) {
+                try {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = langCode;
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.0;
+                    const voices = window.speechSynthesis.getVoices();
+                    let voice = voices.find(v => v.lang === langCode);
+                    if (!voice) {
+                        const prefix = langCode.split('-')[0];
+                        voice = voices.find(v => v.lang.startsWith(prefix));
+                    }
+                    if (voice) utterance.voice = voice;
+                    utterance.onstart = function() { isSpeaking = true; if (langIndicator) langIndicator.textContent = `🔊 Speaking: ${text.substring(0, 40)}...`; };
+                    utterance.onend = function() { isSpeaking = false; if (langIndicator) langIndicator.textContent = `✅ Finished speaking (${langCode})`; };
+                    utterance.onerror = function(e) {
+                        console.error('❌ Speech error:', e);
+                        isSpeaking = false;
+                        if (langIndicator) langIndicator.textContent = `❌ Speech error`;
+                    };
+                    window.speechSynthesis.speak(utterance);
+                } catch (e) {
+                    console.warn('Speech synthesis failed:', e);
+                    if (langIndicator) langIndicator.textContent = '⚠️ Speech not available on this browser.';
+                }
+            } else {
+                if (langIndicator) langIndicator.textContent = '⚠️ Speech not supported.';
             }
-            if (voice) utterance.voice = voice;
-            utterance.onstart = function() { isSpeaking = true; if (langIndicator) langIndicator.textContent = `🔊 Speaking: ${text.substring(0, 40)}...`; };
-            utterance.onend = function() { isSpeaking = false; if (langIndicator) langIndicator.textContent = `✅ Finished speaking (${langCode})`; };
-            utterance.onerror = function(e) { console.error('❌ Speech error:', e); isSpeaking = false; if (langIndicator) langIndicator.textContent = `❌ Speech error`; };
-            window.speechSynthesis.speak(utterance);
         }
 
+        // ---- Sensor alert ----
         function checkSensorAlert(data) {
             if (!sensorAlert) return;
             let alertMsg = '';
@@ -1336,6 +1468,7 @@
             }
         }
 
+        // ====== SECTION SWITCHING ======
         function switchSection(sectionName) {
             Object.keys(sections).forEach(key => {
                 if (sections[key]) sections[key].classList.remove('active');
@@ -1348,7 +1481,7 @@
             }
         }
 
-        // Admin login & tabs
+        // ====== ADMIN LOGIN & TABS ======
         if (adminToggleBtn) {
             adminToggleBtn.addEventListener('click', function() {
                 if (adminLoggedIn) { switchSection('admin'); } else { switchSection('admin'); adminLogin.classList.remove('hidden'); adminPanel.classList.remove('active'); }
@@ -1400,8 +1533,49 @@
             });
         }
 
-        // INIT
-        console.log('🏛️ Admin Dashboard with threshold controls.');
+        // ====== LANGUAGE BUTTONS, REPLAY, DONE ======
+        // Language buttons
+        document.querySelectorAll('#langTabs button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const lang = this.dataset.lang;
+                currentLang = lang;
+                if (currentArtifactData) {
+                    displayArtifact(currentArtifactData, lang);
+                    speakArtifact();
+                }
+            });
+        });
+
+        // Replay
+        replayBtn.addEventListener('click', function() {
+            if (currentArtifactData) speakArtifact();
+            else alert('No artifact data to replay.');
+        });
+
+        // Done
+        doneBtn.addEventListener('click', function() {
+            publishMqtt('museum/done', { action: 'done' });
+            artifactDisplay.classList.remove('active');
+            greetingBox.textContent = '👋 Thank you for visiting!';
+            switchSection('welcome');
+            currentArtifactData = null;
+            // Reset sensor alert if any
+            if (sensorAlert) {
+                sensorAlert.style.display = 'none';
+                sensorAlert.className = 'sensor-alert';
+            }
+        });
+
+        // ====== SPEECH SYNTHESIS VOICES LOAD (for mobile) ======
+        if (window.speechSynthesis) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = function() {
+                window.speechSynthesis.getVoices();
+            };
+        }
+
+        // ====== INIT ======
+        console.log('🏛️ Admin Dashboard with fixed artifact viewer.');
         connectMQTT();
         switchSection('welcome');
         loadConfigFromSheets();

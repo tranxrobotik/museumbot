@@ -1272,7 +1272,7 @@
             artifactMeta.textContent = [origin, year, material].filter(Boolean).join(' • ') || 'Unknown origin';
             artifactDesc.textContent = desc;
             if (artifactImage) {
-                if (artifact.image_url) artifactImage.innerHTML = `<img src="${artifact.image_url}" alt="${name}" />`;
+                if (artifact.image_url) artifactImage.innerHTML = `<img src="${artifact.image_url}" alt="${name}"  height="240px"/>`;
                 else artifactImage.textContent = emoji;
             }
             artifactDisplay.classList.add('active');

@@ -1255,18 +1255,19 @@
                         <button class="dir-btn" data-dir="backward">⬇️</button>
                         <button class="dir-btn" data-dir="rotate_left">↺</button>
                         <button class="dir-btn" data-dir="rotate_right">↻</button>
-                    </div>
-                    <div class="status-text" id="manualStatus">Tap a direction to send command</div>
-                    <div class="reset-wrap">
                         <button id="resetRobotBtn">🔄 Reset Robot</button>
                     </div>
+                    <div class="status-text" id="manualStatus">Tap a direction to send command</div>
+                    <!--<div class="reset-wrap">
+                        <button id="resetRobotBtn">🔄 Reset Robot</button>
+                    </div>-->
                 </div>
 
                 <!-- Demo Mode -->
-                <div class="demo-wrap">
+                <!--<div class="demo-wrap">
                     <button id="demoModeBtn">▶️ Start Demo</button>
                     <span id="demoStatus">Demo: Off</span>
-                </div>
+                </div>-->
             </div>
         </div>
 
@@ -2705,12 +2706,12 @@
             // ==========================================
             const dirButtons = document.querySelectorAll('.manual-control-panel .dir-btn');
             const dirMap = {
-                'forward': { x: 0.3, y: 0, z: 0 },
-                'backward': { x: -0.3, y: 0, z: 0 },
-                'left': { x: 0, y: 0.3, z: 0 },
-                'right': { x: 0, y: -0.3, z: 0 },
-                'rotate_left': { x: 0, y: 0, z: 0.5 },
-                'rotate_right': { x: 0, y: 0, z: -0.5 },
+                'forward': { x: -0.3, y: 0, z: 0 },
+                'backward': { x: 0.3, y: 0, z: 0 },
+                'left': { x: 0, y: -0.3, z: 0 },
+                'right': { x: 0, y: 0.3, z: 0 },
+                'rotate_left': { x: 0, y: 0, z: -0.5 },
+                'rotate_right': { x: 0, y: 0, z: 0.5 },
                 'stop': { x: 0, y: 0, z: 0 }
             };
             const dirNames = {
